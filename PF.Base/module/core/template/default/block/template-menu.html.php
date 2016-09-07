@@ -11,9 +11,9 @@
 defined('PHPFOX') or exit('NO DICE!'); 
 
 ?>
-<nav>
+<nav class="site_menu">
 	{plugin call='core.template_block_template_menu_1'}
-	{if Phpfox::getUserBy('profile_page_id') <= 0}
+	{if Phpfox::getUserBy('profile_page_id') <= 0 && isset($aMainMenus)}
 	<ul>
 		{plugin call='theme_template_core_menu_list'}
 		{if ($iMenuCnt = 0)}{/if}
@@ -30,7 +30,7 @@ defined('PHPFOX') or exit('NO DICE!');
 		{/foreach}
 	</ul>
 	{/if}
-	{if Phpfox::isUser()}
+	{if Phpfox::isUser() && isset($pages)}
 	<div class="nav_pages_holder">
 		<div class="nav_title">
 			<a href="{url link='pages'}" class="browse">
@@ -42,7 +42,7 @@ defined('PHPFOX') or exit('NO DICE!');
 		<div class="nav_pages">
 			{foreach from=$pages item=page}
 			<a href="{$page.link}" class="js_hover_title">
-				{img server_id=$page.user_server_id title=$page.title|clean path='core.url_user' file=$page.user_image suffix='_50_square' max_width=32 max_height=32}
+				{img server_id=$page.user_server_id title=$page.title|clean path='pages.url_image' file=$page.image_path suffix='_50' max_width=32 max_height=32}
 				<span class="js_hover_info">{$page.title|clean}</span>
 			</a>
 			{/foreach}

@@ -119,6 +119,7 @@ class Custom_Component_Ajax_Ajax extends Phpfox_Ajax
 				define('PHPFOX_IS_CUSTOM_FIELD_UPDATE', true);
 				
 				// http://www.phpfox.com/tracker/view/15441/
+				/*
 				$aUserFieldsRequired = 
 					array(
 						'location' => array('user.location' => $aUser['country_iso']),
@@ -138,6 +139,7 @@ class Custom_Component_Ajax_Ajax extends Phpfox_Ajax
 						}
 					}
 				}
+				*/
 				
 				$bReturnUser = false;
 				if(Phpfox_Error::isPassed())
@@ -148,13 +150,12 @@ class Custom_Component_Ajax_Ajax extends Phpfox_Ajax
 				
 				if ($bReturnCustom && $bReturnUser)
 				{
-					$this->call('$(\'#js_custom_submit_button\').attr(\'disabled\', false).removeClass(\'disabled\'); $(\'#js_custom_update_info\').html(\''.str_replace("'", "\\'", Phpfox::getPhrase('user.done')).'\').fadeOut(5000);')
-					->slideDown('#js_custom_public_message');
+					$this->call('$(\'#public_message\').html(\'Profile successfully updated!\'); $Core.processingEnd(); $Core.loadInit();');
 					return true;
 				}
 			}
 			
-			$this->call('$(\'#js_custom_submit_button\').attr(\'disabled\', false).removeClass(\'disabled\'); $(\'#js_custom_update_info\').hide();');			
+			$this->call('$(\'#js_custom_submit_button\').attr(\'disabled\', false).removeClass(\'disabled\'); $Core.processingEnd();');
 			
 		}		
 	}
@@ -170,23 +171,25 @@ class Custom_Component_Ajax_Ajax extends Phpfox_Ajax
 			if ($this->get('type') == 'accept')
 			{
 				Phpfox::getService('custom.relation.process')->updateRelationship(0, $aRelationship['user_id'], $aRelationship['with_user_id']);
-				
+				/*
 				$this->addClass('.js_friend_request_' . $this->get('request_id'), 'row_moderate');
 				$this->call('$(\'.js_friend_request_' . $this->get('request_id') . '\').find(\'.js_drop_data_add\').hide();');
 				$this->call('$(\'.js_friend_request_' . $this->get('request_id') . '\').find(\'.js_drop_data_button\').hide();');
-				$this->call('$(\'.js_friend_request_' . $this->get('request_id') . '\').find(\'.extra_info_middot\').show();');					
+				$this->call('$(\'.js_friend_request_' . $this->get('request_id') . '\').find(\'.extra_info_middot\').show();');
+				*/
+				$this->remove('#drop_down_' . $this->get('request_id'));
 			}
 			else
 			{
 				Phpfox::getService('custom.relation.process')->denyStatus($this->get('relation_data_id'), $aRelationship['with_user_id']);
 				Phpfox::getService('friend.request.process')->delete($this->get('request_id'), $aRelationship['user_id']);
-				$this->remove('.js_friend_request_' . $this->get('request_id'));	
+				$this->remove('#drop_down_' . $this->get('request_id'));
 			}
 		}
 		else if (empty($aRelationship))
 		{
 			Phpfox::getService('custom.relation.process')->checkRequest($this->get('relation_data_id'));
-			$this->remove('.js_friend_request_' . $this->get('request_id'));
+			$this->remove('#drop_down_' . $this->get('request_id'));
 		}
 	}
 }

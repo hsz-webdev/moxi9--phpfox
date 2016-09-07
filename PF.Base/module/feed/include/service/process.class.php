@@ -119,18 +119,31 @@ class Feed_Service_Process extends Phpfox_Service
 		return $this;
 	}			
 	
-	public function add($sType, $iItemId, $iPrivacy = 0, $iPrivacyComment = 0, $iParentUserId = 0, $iOwnerUserId = null, $bIsTag = 0, $iParentFeedId = 0, $sParentModuleName = null)
-	{			
+	public function add($sType, $iItemId = 0, $iPrivacy = 0, $iPrivacyComment = 0, $iParentUserId = 0, $iOwnerUserId = null, $bIsTag = 0, $iParentFeedId = 0, $sParentModuleName = null)
+	{
+		$app = [];
+		$content = null;
+		$isApp = false;
+		if (is_array($sType)) {
+			$app = $sType;
+			$sType = $app['type_id'];
+			$isApp = true;
+			$content = $app['content'];
+			// $iOwnerUserId = $app['user_id'];
+		}
+
 		//Plugin call
 		if (($sPlugin = Phpfox_Plugin::get('feed.service_process_add__start')))
 		{
 			eval($sPlugin);
 		}
-		
-		if ((!Phpfox::isUser() && $this->_bAllowGuest === false) || (defined('PHPFOX_SKIP_FEED') && PHPFOX_SKIP_FEED))
-		{
-			return false;
-		}		
+
+		if (!defined('PHPFOX_FEED_NO_CHECK')) {
+			if (!$isApp && ((!Phpfox::isUser() && $this->_bAllowGuest === false) || (defined('PHPFOX_SKIP_FEED') && PHPFOX_SKIP_FEED)))
+			{
+				return false;
+			}
+		}
 		
 		if ($iParentUserId === null)
         {
@@ -139,7 +152,7 @@ class Feed_Service_Process extends Phpfox_Service
 		
 		$iNewTimeStamp = PHPFOX_TIME;
 		$iNewTimeStampCheck = Phpfox::getLib('date')->mktime(0, 0, 0, date('n', PHPFOX_TIME), date('j', PHPFOX_TIME), date('Y', PHPFOX_TIME));
-		if (Phpfox::getParam('feed.can_add_past_dates'))
+		if (!defined('PHPFOX_INSTALLER') && Phpfox::getParam('feed.can_add_past_dates'))
 		{
 			$aVals = (array) Phpfox_Request::instance()->getArray('val');
 			if (PHPFOX_IS_AJAX)
@@ -176,9 +189,14 @@ class Feed_Service_Process extends Phpfox_Service
 			'parent_feed_id' => (int) $iParentFeedId,
 			'parent_module_id' => (Phpfox::isModule($aParentModuleName[0]) ? $this->database()->escape($sParentModuleName) : null),
 			'time_update' => $iNewTimeStamp,
+			'content' => $content
 		);
+
+		if ($this->_bIsCallback) {
+			unset($aInsert['content']);
+		}
 		
-		if (!$this->_bIsCallback && !Phpfox::getParam('feed.add_feed_for_comments') && preg_match('/^(.*)_comment$/i', $sType))
+		if (!defined('PHPFOX_INSTALLER') && !$this->_bIsCallback && !Phpfox::getParam('feed.add_feed_for_comments') && preg_match('/^(.*)_comment$/i', $sType))
 		{
 			$aInsert['feed_reference'] = true;
 		}		

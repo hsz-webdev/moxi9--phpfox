@@ -148,6 +148,13 @@ class Forum_Service_Thread_Thread extends Phpfox_Service
 			
 			foreach ($aThreads as $iKey => $aThread)
 			{
+				/*
+				if ($aThread['cache_name']) {
+					$aThreads[$iKey]['full_name'] = $aThread['cache_name'];
+					$aThreads[$iKey]['no_link'] = true;
+				}
+				*/
+
 				$sCss = 'new';
 				if ($aThread['is_closed'])
 				{
@@ -407,7 +414,10 @@ class Forum_Service_Thread_Thread extends Phpfox_Service
 		}
 
 		if (!$iPage) {
-			$iPageSize = 4;
+			$iPageSize = 20;
+			if (Phpfox_Request::instance()->get('is_ajax_get')) {
+				$iPageSize = 1000;
+			}
 			$sOrder = 'fp.time_stamp DESC';
 		}
 
@@ -424,6 +434,10 @@ class Forum_Service_Thread_Thread extends Phpfox_Service
 			throw error('no_items');
 		}
 
+		if (!$iPage) {
+			// $aThread['posts'] = array_reverse($aThread['posts']);
+		}
+
 		if (isset($aThread['post_starter'])) {
 			// $aThread['posts'] = array_merge($aThread['post_starter'], $aThread['posts']);
 			$aThread['posts'][] = $aThread['post_starter'];
@@ -435,8 +449,16 @@ class Forum_Service_Thread_Thread extends Phpfox_Service
 		foreach ($aThread['posts'] as $iKey => $aPost)
 		{
 			$iTotal++;
+			/*
+			if ($aPost['cache_name']) {
+				$aThread['posts'][$iKey]['user_id'] = 0;
+				$aThread['posts'][$iKey]['user_image'] = '';
+				$aThread['posts'][$iKey]['full_name'] = $aPost['cache_name'];
+				$aThread['posts'][$iKey]['no_link'] = true;
+			}
+			*/
 
-			$aThread['posts'][$iKey]['count'] = ($sPermaView === null ? $iTotal : Phpfox::getService('forum.post')->getPostCount());
+			$aThread['posts'][$iKey]['count'] = (($sPermaView === null ? $iTotal : Phpfox::getService('forum.post')->getPostCount()) - 1);
 			$aThread['posts'][$iKey]['forum_id'] = $aThread['forum_id'];
 			$aThread['posts'][$iKey]['last_update_on'] = Phpfox::getPhrase('forum.last_update_on_time_stamp_by_update_user', array(
 					'time_stamp' => Phpfox::getTime(Phpfox::getParam('forum.forum_time_stamp'), $aPost['update_time']),

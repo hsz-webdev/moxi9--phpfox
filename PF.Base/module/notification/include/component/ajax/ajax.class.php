@@ -75,9 +75,14 @@ class Notification_Component_Ajax_Ajax extends Phpfox_Ajax
 		{
 			$this->hide('#js_notification_holder');
 			$this->show('#js_no_notifications');
+      $this->hide('#panel .panel_rows');
+      $this->hide('#panel .panel_actions');
+      $this->show('#js_no_notifications');
+      $this->append('#panel', '<div class="message">'. Phpfox::getPhrase('notification.no_new_notifications') .'</div>');
 		}
 		
 		$this->hide('.table_clear_ajax');
+		$this->call("\$('.js_notification_trash > i').removeClass('fa-circle-o-notch').removeClass('fa-spin').addClass('fa-trash');");
 	}
 }
 

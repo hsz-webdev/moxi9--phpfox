@@ -13,6 +13,15 @@ class Flavor extends \Core\Model {
 		// $this->_service = new Service($this->_theme);
 	}
 
+	public function getDefault() {
+		$flavor = $this->db->select('*')
+			->from(':theme_style')
+			->where(['theme_id' => $this->_theme->theme_id])
+			->get();
+
+		return new Flavor\Object($this->_theme, $flavor);
+	}
+
 	public function make($val) {
 		/*
 		 *
@@ -26,8 +35,9 @@ class Flavor extends \Core\Model {
 			'theme_id' => $this->_theme->theme_id,
 			'is_active' => 1,
 			'name' => $val['name'],
-			// 'folder' => $val['folder'],
-			'created' => PHPFOX_TIME
+			'folder' => '_',
+			'created' => PHPFOX_TIME,
+			'is_default' => 0
 		]);
 		$this->db->update(':theme_style', ['folder' => $id], ['style_id' => $id]);
 

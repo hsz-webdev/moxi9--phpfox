@@ -1,15 +1,19 @@
 
-input[type="text"], input[type="email"], input[type="password"], textarea, input:focus, textarea:focus, select, select:focus {
+input[type="text"], input[type="email"], input[type="password"], textarea, input[text="text"]:focus, textarea:focus, select, select:focus {
 	background:@formBg;
 	color:@formColor;
 	border:@formBorder;
 	padding:12px 0px;
-	text-indent:10px;
+	text-indent:0px;
 	outline:0px;
 	font-family:@fontFamilyBase;
 	font-size:@fontSizeBase;
 	box-shadow:none;
 	resize:none;
+}
+
+textarea {
+	padding-left:10px !important;
 }
 
 select, select:focus {
@@ -19,12 +23,24 @@ select, select:focus {
 .js_box {
 	.table {
 		padding:0px;
-		margin-bottom:10px;
 		border:0px;
 	}
 
 	.table_clear {
 		margin-bottom:0px;
+	}
+}
+
+.table3.settings, .table.settings {
+	.table_right, .table_right_text, .row_right {
+		background:transparent;
+		border:0px;
+		padding:0px;
+		input[type="text"] {
+			background:@formBg;
+			padding:15px 0px;
+			text-indent:10px;
+		}
 	}
 }
 
@@ -45,6 +61,12 @@ select, select:focus {
 
     .table_right, .table_right_text, .row_right {
 	    .reset();
+
+	    /*
+	    background:@formBg;
+	    border:@formBorder;
+	    */
+	    padding:0px;
 	    position:relative;
 
 		input[type="text"], input[type="password"], textarea, textarea:focus {
@@ -53,8 +75,14 @@ select, select:focus {
 			/*padding:10px 0px;*/
 		}
 
+	    input[type="text"], input[type="password"] {
+		    text-indent:10px;
+	    }
+
 	    select {
 		    width:100%;
+		    border:0px;
+		    outline:none;
 	    }
 
 	    .extra_info {
@@ -64,6 +92,13 @@ select, select:focus {
 
 	    .p_4 {
 		    position:relative;
+	    }
+
+	    > .p_4 {
+		    background:@blockBg;
+		    color:@blockColor;
+		    padding:8px;
+		    font-size:@fontSizeBase - 1;
 	    }
 
 	    .currency {
@@ -95,7 +130,7 @@ ul.table_clear_button li {
 
 .table_clear {
 	padding:0px;
-	text-align:right;
+	text-align:left;
 	position:relative;
 
 	input.button {
@@ -111,16 +146,29 @@ ul.table_clear_button li {
 	}
 }
 
-input.button, a.button_off_link {
-	background:@bodyBg;
-	color:@textColor;
-	padding:14px 20px;
+.table_hover_action {
+	text-align:center;
+
+	input.button {
+		border-color:darken(@bodyBg, 4%);
+	}
+}
+
+input.button.disabled {
+	opacity:0.2;
+}
+
+input.button:focus, input.button:active, input.button, a.button_off_link {
+	background:@brandPrimary;
+	color:@brandPrimaryColor;
+	padding:14px 20px !important;
 	font-size:@fontSizeBase + 1;
 	font-weight:300;
 	letter-spacing:1px;
-	text-transform:uppercase;
-	border:3px @brandPrimary solid;
+	border:1px @brandPrimary solid !important;
 	box-shadow:none;
+	text-indent:0px !important;
+	outline:none !important;
 }
 
 input.button:hover {
@@ -231,12 +279,23 @@ ul.action {
 .pager_outer {
 	height:40px;
 	line-height:40px;
+	text-align:center;
+	margin:40px 0px;
+}
+
+.pager li.pager_total {
+	display:none;
+}
+
+.pager {
+	position:relative;
 }
 
 .pager li {
 	height:40px;
 	line-height:40px;
-	display:block;
+	display:inline-block;
+	float:none;
 }
 
 .pager li.first a {
@@ -392,35 +451,49 @@ a.delete_link, a.delete_link:hover {
 	.reset();
 }
 
+#page_theme_admincp_manage {
+	.ajax_processing {
+		min-width:0px;
+	}
+}
+
 .ajax_processing, #global_ajax_message {
 	position:fixed;
-	top:0px;
+	top:auto;
 	right:0px;
+	bottom:0px;
 	z-index:100000000;
-	min-width:200px;
-	height:@topHeight;
-	line-height:@topHeight;
-	text-align:right;
-	background:@topBg;
+	height:60px;
+	line-height:60px;
+	text-align:center;
+	/*background:rgba(0, 0, 0, 0.6);*/
+	width:60px;
 	left:auto;
 
 
 	i {
 		display:inline-block;
-		font-size:18px;
-		color:@topColor;
-		margin-right:20px;
+		font-size:25px;
+		color:@brandPrimary;
+		margin-right:10px;
 		vertical-align:middle;
+		box-shadow:@blockBoxShadow;
 	}
 }
 
 .js_item_is_active, .js_item_is_not_active {
-	display:inline-block;
+	display:block;
 	width:60px;
 	height:30px;
 	position:relative;
 	margin:auto;
 	text-align:center;
+
+	.js_item_active_link, .js_item_active_link:hover {
+		display:block;
+		width:60px;
+		height:30px;
+	}
 
 	.js_item_active_link:before, .js_item_active_link:hover:before {
 		.fa('\f205');
@@ -453,5 +526,66 @@ a.delete_link, a.delete_link:hover {
 		color:@blockColor;
 		font-weight:normal;
 		opacity:0.8;
+	}
+}
+
+.valid_answer.table {
+	border:0px;
+	padding:0px;
+}
+
+#div_add_answer {
+	display:block;
+	font-size:@fontSizeBase - 2;
+	text-transform:uppercase;
+	font-weight:600;
+	cursor:pointer;
+
+	i {
+		margin-right:10px;
+	}
+}
+
+#div_add_answer:hover {
+	color:@brandPrimary;
+
+	i {
+		color:@brandPrimary;
+	}
+}
+
+.valid_answer_action {
+	position:relative;
+
+	i {
+		position:absolute;
+		right:5px;
+		top:20px;
+		z-index:10;
+		cursor:pointer;
+	}
+
+	i:hover {
+		color:@brandPrimary
+	}
+}
+
+#div_edit_image_imge, .question_image {
+	img {
+		max-width:200px;
+		border:1px #dfdfdf solid;
+	}
+}
+
+#js_age_to {
+	padding:10px 0px 0px 0px;
+	display:block;
+	text-transform:uppercase;
+	font-weight:600;
+	color:#222;
+	font-size:12px;
+
+	> select {
+		margin-top:10px;
 	}
 }

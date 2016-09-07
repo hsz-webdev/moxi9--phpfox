@@ -101,12 +101,18 @@ class Comment_Service_Process extends Phpfox_Service
 				return false;							
 			}
 		}
-		
-		$aItem = Phpfox::callback($aVals['type'] . '.getCommentItem', $aVals['item_id']);
-		
-		if (!isset($aItem['comment_item_id']))
-		{
-			return false;
+
+		if ($aVals['type'] != 'app') {
+			$aItem = Phpfox::callback($aVals['type'] . '.getCommentItem', $aVals['item_id']);
+			if (!isset($aItem['comment_item_id']))
+			{
+				return false;
+			}
+		}
+		else {
+			$feed = $this->database()->select('*')->from(':feed')->where(['feed_id' => $aVals['item_id']])->get();
+			$aItem['comment_user_id'] = $feed['user_id'];
+			$aItem['comment_view_id'] = 0;
 		}
 		
 		$bIsBlocked = Phpfox::getService('user.block')->isBlocked($aItem['comment_user_id'], Phpfox::getUserId());
@@ -178,7 +184,9 @@ class Comment_Service_Process extends Phpfox_Service
 		
 		Phpfox::getLib('parse.bbcode')->useVideoImage(($aVals['type'] == 'feed' ? true : false));
 		
-		$aVals['text_parsed'] = Phpfox::getLib('parse.input')->prepare($aVals['text']);
+		$aVals['text_parsed'] = Phpfox::getLib('parse.input')->prepare($aVals['text'], false, [
+			'comment' => $iId
+		]);
 
 		$this->database()->insert(Phpfox::getT('comment_text'), array(
 				'comment_id' => $iId,
@@ -406,6 +414,8 @@ class Comment_Service_Process extends Phpfox_Service
 		$this->database()->delete(Phpfox::getT('comment_text'), "comment_id = " . (int) $iId);
 		$this->database()->delete(Phpfox::getT('comment_rating'), 'comment_id = ' . (int) $iId);
 		(($sPlugin = Phpfox_Plugin::get('comment.service_process_delete')) ? eval($sPlugin) : false);
+
+		return true;
 	}
 
 	public function deleteForItem($iUserId, $iItemId, $sCategory)

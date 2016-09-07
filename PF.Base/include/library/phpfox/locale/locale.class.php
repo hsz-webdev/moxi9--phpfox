@@ -253,14 +253,14 @@ class Phpfox_Locale
 		{
 			if (($sLanguageId = Phpfox::getLib('session')->get('language_id')))
 			{
-				
+
 			}
 			else 
 			{
 				$sLanguageId = $this->autoLoadLanguage();
 			}
 		}
-		
+
 		if (!isset($this->_aLanguages[$sLanguageId]))
 		{
 			$sLanguageId = 'en';
@@ -423,9 +423,9 @@ class Phpfox_Locale
                 
                 if ($sPlugin = Phpfox_Plugin::get('library_phpfox_locale_phrase_not_found')){eval ($sPlugin); if (isset($mPluginReturn)){return $mPluginReturn;}}
 				
-				if (PHPFOX_DEBUG)
+				if (PHPFOX_DEBUG && $bNoDebug === false)
 				{
-					Phpfox_Error::trigger('Unable to find the phrase: ' . strip_tags($sParam));
+					// Phpfox_Error::trigger('Unable to find the phrase: ' . strip_tags($sParam));
 				}
 				return '';
 			}

@@ -81,7 +81,7 @@ class HTTP {
 		}
 		$post = http_build_query($this->_params);
 
-		$curl_url = (($this->_method == 'GET' && !empty($post)) ? $url . '?' . ltrim($post, '&') : $url);
+		$curl_url = (($this->_method == 'GET' && !empty($post)) ? $url . (strpos($url, '?') ? '&' : '?') . ltrim($post, '&') : $url);
 
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_URL, $curl_url);
@@ -110,13 +110,16 @@ class HTTP {
 
 		$this->_data = curl_exec($curl);
 
+		// var_dump($this->_data); exit;
+
 		curl_close($curl);
 
 		$data = trim($this->_data);
 		if (substr($data, 0, 1) == '{' || substr($data, 0, 1) == '[') {
 			$data = json_decode($data);
 			if (isset($data->error)) {
-				throw Error($data->error);
+				// throw Error($data->error);
+				\Phpfox_Error::set($data->error);
 			}
 		}
 

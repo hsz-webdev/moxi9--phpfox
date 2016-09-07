@@ -27,20 +27,14 @@ defined('PHPFOX') or exit('NO DICE!');
 	<div class="clear"></div>
 </div>
 
-
-
-	<div id="js_custom_public_message" class="public_message" style="margin-bottom:10px;">
-		<a href="{url link='profile'}">{phrase var='user.view_your_updated_profile'}</a>
-	</div>
-
-	<form method="post" action="{url link='user.profile'}"{if !$bIsEdit} onsubmit="{plugin call='user.template_controller_profile_form_onsubmit'} $('#js_custom_public_message').hide(); $('#js_custom_submit_button').attr('disabled', true).addClass('disabled'); $('#js_custom_update_info').html($.ajaxProcess('{phrase var='user.updating_profile' phpfox_squote=true}')).show(); $(this).ajaxCall('custom.updateFields'); return false;"{/if}>
+	<form method="post" action="{url link='user.profile'}"{if !$bIsEdit} onsubmit="{plugin call='user.template_controller_profile_form_onsubmit'} $Core.processing(); $(this).ajaxCall('custom.updateFields'); return false;"{/if}>
 	{if isset($iUserId)}
 		<div><input type="hidden" name="id" value="{$iUserId}" /></div>
 	{/if}
 <div class="js_custom_groups js_custom_group_basic">
 	<div class="table">
 			<div class="table_left">
-				<label for="country_iso">{required}{phrase var='user.location'}:</label>
+				<label for="country_iso">{phrase var='user.location'}:</label>
 			</div>
 			<div class="table_right">
 				{select_location}
@@ -73,7 +67,7 @@ defined('PHPFOX') or exit('NO DICE!');
 		{if Phpfox::getUserParam('user.can_edit_dob')}
 		<div class="table">
 			<div class="table_left">
-				{required}{phrase var='user.date_of_birth'}:
+				{phrase var='user.date_of_birth'}:
 			</div>
 			<div class="table_right">
 				{select_date start_year=$sDobStart end_year=$sDobEnd field_separator='' field_order='MDY' bUseDatepicker=false sort_years='DESC'}
@@ -84,7 +78,7 @@ defined('PHPFOX') or exit('NO DICE!');
 		{if Phpfox::getUserParam('user.can_edit_gender_setting')}
 		<div class="table">
 			<div class="table_left">
-				<label for="gender">{required}{phrase var='user.gender'}:</label>
+				<label for="gender">{phrase var='user.gender'}:</label>
 			</div>
 			<div class="table_right">
 				{select_gender}
@@ -133,7 +127,7 @@ defined('PHPFOX') or exit('NO DICE!');
 										<input type="hidden" name="val[previous_relation_with]" value="{if isset($aForms.with_user.user_id)}{$aForms.with_user.user_id}{else}0{/if}">
 										<input type="hidden" name="val[previous_relation_type]" value="{if isset($aForms.relation_id)}{$aForms.relation_id}{else}0{/if}">
 										{if isset($aForms.with_user.status_id) && $aForms.with_user.status_id == 1}
-										<div style="margin-left:60px;">{phrase var='user.pending_confirmation'}</div>
+										<div class="message">{phrase var='user.pending_confirmation'}</div>
 										{/if}
 						</div>
 						{literal}
@@ -149,7 +143,7 @@ defined('PHPFOX') or exit('NO DICE!');
 								'default_value': {/literal}{if isset($aForms.with_user) && $aForms.with_user.with_user_id > 0}'{$aForms.with_user.full_name}' {else} '{phrase var='user.search_friends_by_their_name'}'{/if}{literal},
 								'search_input_id' : 'sFriendInput',
 								'onclick': function()
-								{																	
+								{
 									return false;
 								},
 								'onBeforePrepend' : function()
@@ -162,13 +156,12 @@ defined('PHPFOX') or exit('NO DICE!');
 									}
 									$('#sFriendImage').html('' + $Core.searchFriendsInput.aFoundUser['user_image'] + '');
 									$('#js_custom_search_friend_placement').hide();
-									
-									/* Make sure there's only one input with the name 
-									 * -safe check for when user doesnt reload the page like in ajax browsing- */
+
 									if ($('#relation_with_input_hidden').length > 0)
 									{
 										$('#relation_with_input_hidden').remove();
 									}
+
 									if ($('#relation_with_input_hidden').length < 1)
 									{
 										$('#sFriendImage').after('<input type="hidden" id="relation_with_input_hidden" name="val[relation_with]" value="' + $Core.searchFriendsInput.aFoundUser['user_id'] + '">');
@@ -178,8 +171,8 @@ defined('PHPFOX') or exit('NO DICE!');
 										$('#relation_with_input_hidden').val($Core.searchFriendsInput.aFoundUser['user_id']);
 									}
 								}
-							});	
-						}
+							});
+						};
 						</script>
 						{/literal}
 					

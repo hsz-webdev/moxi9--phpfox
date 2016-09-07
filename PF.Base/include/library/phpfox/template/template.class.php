@@ -256,6 +256,9 @@ class Phpfox_Template
 	private $_theme;
 	private $_meta;
 	private $_keepBody = false;
+	private $_subMenu = [];
+
+	public $delayedHeaders = [];
 	
 	/**
 	 * Class constructor we use to build the current theme and style
@@ -580,9 +583,8 @@ class Phpfox_Template
 	 * @return $this
 	 */
 	public function setBreadCrumb($sPhrase, $sLink = '', $bIsTitle = false)
-	{		
+	{
 		(($sPlugin = Phpfox_Plugin::get('template_template_setbreadcrump')) ? eval($sPlugin) : false);
-		
 		if (is_array($sPhrase))
 		{
 			foreach ($sPhrase as $aPhrase)
@@ -725,7 +727,7 @@ class Phpfox_Template
 	 * All HTML added here is coded under XHTML standards.
 	 *
 	 * @access public
-	 * @param unknown_type $mHeaders
+	 * @param array $mHeaders
 	 * @return $this
 	 */
 	public function setHeader($mHeaders, $mValue = null)
@@ -1043,7 +1045,33 @@ class Phpfox_Template
 			$this->setHeader(array('custom.css' => 'style_css'));
 		}
 
-		Core\Event::trigger('lib_phpfox_template_getheader', $this);
+		if ($this->delayedHeaders) {
+			foreach ($this->delayedHeaders as $header) {
+				$this->setHeader('cache', $header);
+			}
+		}
+
+		// $this->setHeader('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">');
+
+		if (!defined('PHPFOX_INSTALLER')) {
+			Core\Event::trigger('lib_phpfox_template_getheader', $this);
+			foreach ((new Core\App())->all() as $App) {
+				if ($App->head && is_array($App->head)) {
+					foreach ($App->head as $head) {
+						$this->setHeader($head);
+					}
+				}
+
+				if ($App->settings) {
+					$Setting = new Core\Setting();
+					foreach ($App->settings as $key => $setting) {
+						if (isset($setting->js_variable)) {
+							$this->setHeader('<script>var ' . $key . ' = "' . $Setting->get($key) . '";</script>');
+						}
+					}
+				}
+			}
+		}
 
 		$aArrayData = array();
 		$sData = '';
@@ -1089,12 +1117,12 @@ class Phpfox_Template
 			if (!defined('PHPFOX_INSTALLER'))
 			{
 				$aJsVars['bWysiwyg'] = ((Phpfox::getParam('core.wysiwyg') != 'default' && Phpfox::getParam('core.allow_html')) ? true : false);
-				$aJsVars['sEditor'] = Phpfox::getParam('core.wysiwyg');	
+				$aJsVars['sEditor'] = Phpfox::getParam('core.wysiwyg');
 				$aJsVars['sJsCookiePath'] = Phpfox::getParam('core.cookie_path');
 				$aJsVars['sJsCookieDomain'] = Phpfox::getParam('core.cookie_domain');
 				$aJsVars['sJsCookiePrefix'] = Phpfox::getParam('core.session_prefix');	
 				$aJsVars['bPhotoTheaterMode'] = (Phpfox::isModule('photo') ? Phpfox::getParam('photo.view_photos_in_theater_mode') : false);
-				$aJsVars['bUseHTML5Video'] = ((Phpfox::isModule('video') && Phpfox::getParam('video.upload_for_html5')) ? true : false);
+				$aJsVars['bUseHTML5Video'] = false; // ((Phpfox::isModule('video') && Phpfox::getParam('video.upload_for_html5')) ? true : false);
 				if (Phpfox::isAdmin())
 				{
 					$aJsVars['sAdminCPLocation'] = Phpfox::getParam('admincp.admin_cp');
@@ -1300,6 +1328,29 @@ class Phpfox_Template
             $aCacheCSS = array();
             
             $this->_sFooter = '';
+
+
+		if (Phpfox::isUser()) {
+			$image = Phpfox_Image_Helper::instance()->display([
+				'user' => Phpfox::getUserBy(),
+				'suffix' => '_50_square',
+				// 'return_url' => true
+			]);
+
+			$imageUrl = Phpfox_Image_Helper::instance()->display([
+				'user' => Phpfox::getUserBy(),
+				'suffix' => '_50_square',
+				'return_url' => true
+			]);
+
+			// if (strpos($image, 'no_image_user')) {
+			$image = htmlspecialchars($image);
+			$image = str_replace(['<', '>'], ['&lt;', '&gt;'], $image);
+			// }
+
+			$this->_sFooter .= '<div id="auth-user" data-image-url="' . str_replace("\"", '\'', $imageUrl) . '" data-user-name="' . Phpfox::getUserBy('user_name') . '" data-id="' . Phpfox::getUserId() . '" data-name="' . Phpfox::getUserBy('full_name') . '" data-image="' . $image . '"></div>';
+		}
+
             $sJs .= "\t\t\t" . 'var $Behavior = {}, $Ready = $Ready = function(callback) {$Behavior[callback.toString().length] = callback;}, $Events = {}, $Event = function(callback) {$Events[callback.toString().length] = callback;};' . "\n";
             $sJs .= "\t\t\t" .'var $Core = {};' . "\n";
 			$aCustomCssFile = array();
@@ -1677,8 +1728,14 @@ class Phpfox_Template
 		}
 
 		if (!defined('PHPFOX_INSTALLER') && !Phpfox::isAdminPanel()) {
-			$Theme = $this->_theme->get();
-			$sData .= '<link href="' . Phpfox::getParam('core.path') . 'themes/' . $Theme->folder . '/flavor/' . $Theme->flavor_folder . '.css?v=' . Phpfox::internalVersion() . '" rel="stylesheet">';
+			$Request = \Phpfox_Request::instance();
+			if ($Request->segment(1) == 'theme' && $Request->segment(2) == 'demo') {
+				$sData .= '<link href="' . Phpfox::getParam('core.path') . 'theme/default/flavor/default.css?v=' . Phpfox::internalVersion() . '" rel="stylesheet">';
+			}
+			else {
+				$Theme = $this->_theme->get();
+				$sData .= '<link href="' . Phpfox::getParam('core.path') . 'themes/' . $Theme->folder . '/flavor/' . $Theme->flavor_folder . '.css?v=' . Phpfox::internalVersion() . '" rel="stylesheet">';
+			}
 		}
 
 		if (!defined('PHPFOX_INSTALLER')) {
@@ -1880,7 +1937,16 @@ class Phpfox_Template
 		return $sData;
 	}
 
+	public $footer = '';
+
 	public function getFooter() {
+
+		$this->_sFooter .= '<div id="show-side-panel"><span></span></div>';
+
+		Core\Event::trigger('lib_phpfox_template_getfooter', $this);
+
+		$this->_sFooter .= $this->footer;
+
 		if (Phpfox::isAdmin() && !Phpfox::isAdminPanel()) {
 			$Url = Phpfox_Url::instance();
 			$this->_sFooter .= '<div id="pf_admin">';
@@ -1891,6 +1957,23 @@ class Phpfox_Template
 
 			$this->_sFooter .= '<a href="' . Phpfox_Url::instance()->makeUrl('admincp') . '" class="js_hover_title no_ajax"><i class="fa fa-diamond"></i><span class="js_hover_info">AdminCP</span></a>';
 			$this->_sFooter .= '</div>';
+		}
+
+		// $this->_sFooter .= '<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>';
+		if (!defined('PHPFOX_INSTALLER')) {
+			foreach ((new Core\App())->all() as $App) {
+				if ($App->footer && is_array($App->footer)) {
+					foreach ($App->footer as $footer) {
+						$this->_sFooter .= $footer;
+					}
+				}
+
+				if ($App->js && is_array($App->js)) {
+					foreach ($App->js as $js) {
+						$this->_sFooter .= '<script src="' . $js . '"></script>';
+					}
+				}
+			}
 		}
 
 		return $this->_sFooter;
@@ -2082,7 +2165,6 @@ class Phpfox_Template
 			$this->_aVars[$sVar] = $sValue;
 		}
 
-			
 		return $this;
 	}
 	
@@ -2237,7 +2319,8 @@ class Phpfox_Template
 		$sName = implode('.', $aParts);		
 		
 		$sName = str_replace('.', PHPFOX_DS, $sName);
-		
+
+		/*
 		if (!defined('PHPFOX_INSTALLER') && !defined('PHPFOX_LIVE_TEMPLATES'))
 		{
 			$oDb = Phpfox_Database::instance();
@@ -2250,7 +2333,8 @@ class Phpfox_Template
 			{
 				return array($aTemplate['html_data']);
 			}
-		}		
+		}
+		*/
 		
 		$bPass = false;		
 		if (file_exists(PHPFOX_DIR_MODULE . $sModule . PHPFOX_DIR_MODULE_TPL . PHPFOX_DS . $this->_sThemeFolder . PHPFOX_DS . $sName . PHPFOX_TPL_SUFFIX))
@@ -2483,6 +2567,7 @@ class Phpfox_Template
 	 */
 	public function getMenu($sConnection = null)
 	{
+		$original = $sConnection;
 		$oCache = Phpfox::getLib('cache');
 		$oDb = Phpfox_Database::instance();
 		$oReq = Phpfox_Request::instance();
@@ -2511,7 +2596,7 @@ class Phpfox_Template
 		}		
 		
 		$sCachedId = $oCache->set(array('theme', 'menu_' . str_replace(array('/', '\\'), '_', $sConnection) . (Phpfox::isUser() ? Phpfox::getUserBy('user_group_id') : 0)));
-		
+
 		if ((!($aMenus = $oCache->get($sCachedId))) && is_bool($aMenus) && !$aMenus)
 		{
 			$aParts = explode('.', $sConnection);		
@@ -2618,9 +2703,21 @@ class Phpfox_Template
 				Phpfox::getLib('cache')->save($sUserMenuCache, $aUserMenusCache);
 			}
 		}
-		
+
 		foreach ($aMenus as $iKey => $aMenu)
 		{
+			/*
+			if (!isset($aMenu['url'])) {
+				$aMenus[$iKey] = [
+					'custom' => true,
+					'title' => array_keys($aMenu)[0],
+					'url' => array_values($aMenu)[0]
+				];
+
+				continue;
+			}
+			*/
+
 			if (substr($aMenu['url'], 0, 1) == '#')
 			{
 				$aMenus[$iKey]['css_name'] = 'js_core_menu_' . str_replace('#', '', str_replace('-', '_', $aMenu['url']));
@@ -2747,15 +2844,6 @@ class Phpfox_Template
 				continue;
 			}
 			
-			if ($sConnection == 'explore')
-			{
-				$aMenus[$iKey]['module_image'] = $this->getStyle('image', 'module/' . $aMenu['module'] . '.png');
-				if (!file_exists(str_replace(Phpfox::getParam('core.path'), PHPFOX_DIR, $aMenus[$iKey]['module_image'])))
-				{
-					unset($aMenus[$iKey]['module_image']);	
-				}
-			}
-			
 			if (isset($aMenu['children']))
 			{
 				foreach ($aMenu['children'] as $iChildKey => $aChild)
@@ -2769,7 +2857,24 @@ class Phpfox_Template
 		}
 				
 		return $aMenus;
-	}	
+	}
+
+	public function menu($title, $url, $extra = '') {
+		/*
+		$this->_menu[] = [
+			'custom' => true,
+			'title' => $title,
+			'url' => $url
+		];
+		*/
+		$this->assign('customMenu', [
+			'title' => $title,
+			'url' => $url,
+			'extra' => $extra
+		]);
+
+		return $this;
+	}
 	
 	/**
 	 * Set the current URL for the site.
@@ -2910,6 +3015,38 @@ class Phpfox_Template
 				'aFilterMenus' => $aFilterMenuCache,
 			)
 		);	
+	}
+
+	public function setSubMenu($menu) {
+		$this->_subMenu = $menu;
+	}
+
+	public function getSubMenu() {
+		if (!$this->_subMenu) {
+			return '';
+		}
+
+		$current = trim(Phpfox_Request::instance()->uri(), '/');
+		if (is_string($this->_subMenu)) {
+			$current = Phpfox_Url::instance()->makeUrl($current);
+			$this->_subMenu = preg_replace('/href\=\"' . preg_quote($current, '/') . '\"/i', 'href="' . $current . '" class="active"', $this->_subMenu);
+
+			return $this->_subMenu;
+		}
+
+		$html = '<div class="section_menu"><ul>';
+		foreach ($this->_subMenu as $name => $url) {
+			$active = '';
+			$check = trim($url, '/');
+			if ($check == $current) {
+				$active = ' class="active"';
+			}
+
+			$html .= '<li><a href="' . Phpfox_Url::instance()->makeUrl($url) . '"' . $active . '>' . $name . '</a></li>';
+		}
+		$html .= '</ul></div>';
+
+		return $html;
 	}
 	
 	/**

@@ -6,8 +6,11 @@
 		{header}
 	</head>
 	<body>
+		{if (isset($bIsUprade) && $bIsUprade)}
+		<div id="is-upgrade"></div>
+		{/if}
 		<div id="header">
-			PHPfox
+			PHPfox <span>{$sCurrentVersion}</span>
 		</div>
 		<div id="installer">
 			{if isset($requirementErrors)}

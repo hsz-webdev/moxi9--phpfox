@@ -73,12 +73,12 @@ class Forum_Component_Controller_Thread extends Phpfox_Component
 		}
 
 		list($iCnt, $aThread) = Forum_Service_Thread_Thread::instance()->getThread($aThreadCondition, array(), 'fp.time_stamp ASC', $iPage, $iPageSize, $sPermaView);
-		
+
 		if (!isset($aThread['thread_id']))
 		{
 			return Phpfox_Error::display(Phpfox::getPhrase('forum.not_a_valid_thread'));
 		}
-		
+
 		if ($aThread['group_id'] > 0)
 		{
 			$aCallback = Phpfox::callback('pages.addForum', $aThread['group_id']);	
@@ -117,7 +117,7 @@ class Forum_Component_Controller_Thread extends Phpfox_Component
 		}
 	
 		Phpfox_Pager::instance()->set(array('page' => $iPage, 'size' => $iPageSize, 'count' => $iCnt));
-			
+
 		$aForum = Phpfox::getService('forum')			
 			->id($aThread['forum_id'])
 			->getForum();						
@@ -267,6 +267,14 @@ class Forum_Component_Controller_Thread extends Phpfox_Component
 		
         $sCurrentThreadLink = ($aCallback === null ? $this->url()->makeUrl('forum', array($aForum['name_url'] . '-' . $aForum['forum_id'], $aThread['title_url'])) : $this->url()->makeUrl($aCallback['url_home'], $aThread['title_url']));
 
+		if ($this->request()->get('view')) {
+			Phpfox_Module::instance()->appendPageClass('single_mode');
+		}
+
+		if (Phpfox::isUser()) {
+				$this->template()->menu('Reply', '#', 'onclick="$Core.box(\'forum.reply\', 800, \'id=' . $aThread['thread_id'] . '\'); return false;"');
+		}
+
 		$this->template()->setTitle($aThread['title'])						
 			->setBreadcrumb($aThread['title'], $this->url()->permalink('forum.thread', $aThread['thread_id'], $aThread['title']), true)
 			->setMeta('description', $aThread['title'] . ' - ' . $aForum['name'])
@@ -327,13 +335,28 @@ class Forum_Component_Controller_Thread extends Phpfox_Component
 						)					
 					)
 				)
-			);		
-			
+			);
+
 		Phpfox::getLib('parse.output')->setEmbedParser(array(
 				'width' => 640,
 				'height' => 360
 			)
 		);
+
+		if ($this->request()->get('is_ajax_get')) {
+			$this->template()->assign('isReplies', true);
+			Phpfox_Module::instance()->getControllerTemplate();
+			$content = ob_get_contents();
+			ob_clean();
+
+			return [
+				'run' => "$('.thread_replies .fa').remove();",
+				'html' => [
+					'to' => '.tr_content',
+					'with' => $content
+				]
+			];
+		}
 	}
 	
 	/**

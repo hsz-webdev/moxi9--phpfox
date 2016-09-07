@@ -26,7 +26,7 @@ class CSS extends \Core\Model {
 		file_put_contents($path . '.css', $parsed);
 
 		$this->db->update(':setting', array('value_actual' => ((int) \Phpfox::getParam('core.css_edit_id') + 1)), 'var_name = \'css_edit_id\'');
-		$this->cache->remove('setting');
+		$this->cache->del('setting');
 
 		return true;
 
@@ -62,10 +62,15 @@ class CSS extends \Core\Model {
 
 	public function get($returnLess = false) {
 		$html = $this->_theme->getPath() . 'flavor/' . $this->_theme->flavor_folder . '.less';
+		if (!file_exists($html)) {
+			throw new \Exception('Less file does not exist.');
+		}
+
 		$html = file_get_contents($html);
 
 		$parts = explode('/** START CSS */', $html);
-		if ($returnLess) {
+
+		if ($returnLess === true) {
 			return $parts[0];
 		}
 

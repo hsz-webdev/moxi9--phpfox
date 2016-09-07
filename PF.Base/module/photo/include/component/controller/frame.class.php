@@ -47,19 +47,28 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 		{
 			define('PHPFOX_HTML5_PHOTO_UPLOAD', true);
 
-			$sHTML5TempFile = PHPFOX_DIR_CACHE . 'image_' . md5(PHPFOX_DIR_CACHE . $fn . uniqid());
+			if (isset($_FILES['ajax_upload'])) {
+				$_FILES['image'] = [];
+				// $_FILES['image'][] = $_FILES['ajax_upload'];
+				foreach ($_FILES['ajax_upload'] as $key => $value) {
+					$_FILES['image'][$key][0] = $value;
+				}
+			}
+			else {
+				$sHTML5TempFile = PHPFOX_DIR_CACHE . 'image_' . md5(PHPFOX_DIR_CACHE . $fn . uniqid());
 
-			file_put_contents(
-				$sHTML5TempFile,
-				file_get_contents('php://input')
-			);
-			$_FILES['image'] = array(
-				'name' => array($fn),
-				'type' => array('image/jpeg'),
-				'tmp_name' => array($sHTML5TempFile),
-				'error' => array(0),
-				'size' => array(filesize($sHTML5TempFile))
-			);
+				file_put_contents(
+					$sHTML5TempFile,
+					file_get_contents('php://input')
+				);
+				$_FILES['image'] = array(
+					'name' => array($fn),
+					'type' => array('image/jpeg'),
+					'tmp_name' => array($sHTML5TempFile),
+					'error' => array(0),
+					'size' => array(filesize($sHTML5TempFile))
+				);
+			}
 		}
 
 		// If no images were uploaded lets get out of here.
@@ -95,7 +104,7 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 			{				
 				// Output JavaScript	
 				echo '<script type="text/javascript">';
-				if (!$bIsInline)
+				if (!isset($bIsInline))
 				{		
 					echo 'window.parent.document.getElementById(\'js_progress_cache_holder\').style.display = \'none\';';
 					echo 'window.parent.document.getElementById(\'js_photo_form_holder\').style.display = \'block\';';
@@ -105,7 +114,7 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 				{
 					if (isset($aVals['is_cover_photo']))
 					{
-						echo 'window.parent.$(\'#js_cover_photo_iframe_loader_error\').html(\'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\');';
+						echo 'window.parent.$(\'#js_cover_photo_iframe_loader_error\').html(\'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\').show();';
 					}
 					else
 					{					
@@ -160,7 +169,7 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 		{
 			$aVals['description'] = $_REQUEST['status_info'];
 		}
-		
+
 		foreach ($_FILES['image']['error'] as $iKey => $sError)
 		{	
 			if ($sError == UPLOAD_ERR_OK) 
@@ -351,7 +360,8 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 					echo 'window.parent.';
 				}
 
-				echo '$.ajaxCall(\'photo.process\', \''. ((isset($aVals['page_id']) && !empty($aVals['page_id'])) ? 'is_page=1&' : '') .'js_disable_ajax_restart=true' . $sExtra . '&twitter_connection=' . ((isset($aVals['connection']) && isset($aVals['connection']['twitter'])) ? $aVals['connection']['twitter'] : '0') . '&facebook_connection=' . (isset($aVals['connection']['facebook']) ? $aVals['connection']['facebook'] : '0') . '&custom_pages_post_as_page=' . $this->request()->get('custom_pages_post_as_page') . '&photos=' . urlencode(json_encode($aImages)) . '&action=' . $sAction . '' . (isset($iFeedId) ? '&feed_id=' . $iFeedId : '') . '' . ($aCallback !== null ? '&callback_module=' . $aCallback['module'] . '&callback_item_id=' . $aCallback['item_id'] : '') . '&parent_user_id=' . (isset($aVals['parent_user_id']) ? (int) $aVals['parent_user_id'] : 0) . '&is_cover_photo=' . (isset($aVals['is_cover_photo']) ? '1' : '0') . ((isset($aVals['page_id']) && $aVals['page_id'] > 0) ? '&page_id='.$aVals['page_id'] : '') . '\');';
+				$out = http_build_query((new Core\Request())->all());
+				echo '$.ajaxCall(\'photo.process\', \'' . $out . '&'. ((isset($aVals['page_id']) && !empty($aVals['page_id'])) ? 'is_page=1&' : '') .'js_disable_ajax_restart=true' . $sExtra . '&twitter_connection=' . ((isset($aVals['connection']) && isset($aVals['connection']['twitter'])) ? $aVals['connection']['twitter'] : '0') . '&facebook_connection=' . (isset($aVals['connection']['facebook']) ? $aVals['connection']['facebook'] : '0') . '&custom_pages_post_as_page=' . $this->request()->get('custom_pages_post_as_page') . '&photos=' . urlencode(json_encode($aImages)) . '&action=' . $sAction . '' . (isset($iFeedId) ? '&feed_id=' . $iFeedId : '') . '' . ($aCallback !== null ? '&callback_module=' . $aCallback['module'] . '&callback_item_id=' . $aCallback['item_id'] : '') . '&parent_user_id=' . (isset($aVals['parent_user_id']) ? (int) $aVals['parent_user_id'] : 0) . '&is_cover_photo=' . (isset($aVals['is_cover_photo']) ? '1' : '0') . ((isset($aVals['page_id']) && $aVals['page_id'] > 0) ? '&page_id='.$aVals['page_id'] : '') . '\');';
 				if (!defined('PHPFOX_HTML5_PHOTO_UPLOAD'))
 				{
 					echo '</script>';
@@ -369,15 +379,18 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 			}
 			else
 			{
-				unlink($sHTML5TempFile);
+				if (isset($sHTML5TempFile) && file_exists($sHTML5TempFile)) {
+					unlink($sHTML5TempFile);
+				}
 				header('HTTP/1.1 500 Internal Server Error');
+				echo 'hasErrors++;';
 			}
 
 			if (!$bIsInline)
 			{
-				echo 'window.parent.$(\'#js_progress_cache_holder\').hide();';
-				echo 'window.parent.document.getElementById(\'js_photo_form_holder\').style.display = \'block\';';
-				echo 'window.parent.document.getElementById(\'js_upload_error_message\').innerHTML = \'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\';';				
+				// echo 'window.parent.$(\'#js_progress_cache_holder\').hide();';
+				// echo 'window.parent.document.getElementById(\'js_photo_form_holder\').style.display = \'block\';';
+				// echo 'window.parent.document.getElementById(\'js_upload_error_message\').innerHTML = \'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\';';
 			}
 			else
 			{
@@ -389,7 +402,7 @@ class Photo_Component_Controller_Frame extends Phpfox_Component
 				{
 					echo 'window.parent.$(\'#js_cover_photo_iframe_loader_upload\').hide();';
 					echo 'window.parent.$(\'#js_activity_feed_form\').show();';
-					echo 'window.parent.$(\'#js_cover_photo_iframe_loader_error\').html(\'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\');';
+					echo 'window.parent.$(\'#js_cover_photo_iframe_loader_error\').html(\'<div class="error_message">' . implode('', Phpfox_Error::get()) . '</div>\').show();';
 				}
 				else
 				{

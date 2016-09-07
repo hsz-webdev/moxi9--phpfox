@@ -2,6 +2,29 @@
 (function($) {
 
 	var boot = function() {
+
+		$('#license_selector a').click(function() {
+			var t = $(this);
+
+			if (t.hasClass('premium')) {
+				// $('#license_selector').hide();
+				$('#license_selector').html('<div class="process"><i class="fa fa-spin fa-circle-o-notch"></i></div>');
+				setTimeout(function() {
+					$('#license_selector').hide();
+					$('#client_details').fadeIn();
+				}, 800);
+			}
+			else {
+				$('#license_id, #license_key').val('techie');
+				if (t.hasClass('trial')) {
+					$('#license_trial').val(1);
+				}
+				$('#js_form').trigger('submit');
+			}
+
+			return false;
+		});
+
 		$('form:not(.built)').submit(function() {
 			var t = $(this);
 
@@ -16,8 +39,12 @@
 	var runStep = function(step, type, timeout, data) {
 		$('#installer .error').remove();
 		setTimeout(function() {
+			var isUpgrade = '';
+			if ($('#is-upgrade').length) {
+				isUpgrade = '&phpfox-upgrade=1';
+			}
 			$.ajax({
-				url: BasePath + '?step=' + step,
+				url: BasePath + '?step=' + step + isUpgrade,
 				type: (type ? type : 'GET'),
 				data: data,
 				error: function(e) {

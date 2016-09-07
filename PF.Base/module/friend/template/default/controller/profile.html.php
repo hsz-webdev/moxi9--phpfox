@@ -11,13 +11,9 @@
 defined('PHPFOX') or exit('NO DICE!'); 
 
 ?>
-{if count($aFriends)}
-	{foreach from=$aFriends name=friend item=aUser}
-		{template file='user.block.rows'}
-	{/foreach}
-	{pager}
-{else}
-<div class="extra_info">
-	No friends have been added yet.
-</div>
+{if ($aFriends)}
+{foreach from=$aFriends name=friend item=aUser}
+	{template file='user.block.rows'}
+{/foreach}
+{pager}
 {/if}

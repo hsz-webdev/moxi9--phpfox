@@ -1,10 +1,26 @@
 
 .admincp_apps_holder {
 	> section:not(.preview) {
-		margin-right:20%;
+		/*margin-right:24%;*/
 	}
 
+	/*
 	> section.preview {
+
+		> h1 {
+			height:40px;
+			line-height:40px;
+			text-indent:10px;
+			font-weight:300;
+			color:#808080;
+			font-size:16px;
+			background:#f8f8f8;
+		}
+
+		.admincp_apps {
+			padding:10px;
+		}
+
 		width:20%;
 		background:@blockBg;
 		position:fixed;
@@ -38,10 +54,10 @@
 
 		> div {
 			position:absolute;
-			top:10px;
-			right:10px;
+			top:40px;
+			right:0px;
 			bottom:50px;
-			left:10px;
+			left:0px;
 			overflow:auto;
 
 			> h1 {
@@ -52,10 +68,30 @@
 			}
 		}
 	}
+	*/
 }
 
+.new_installs {
+	background:@blockBg;
+	margin-bottom:50px;
+
+	> h1 {
+		height:40px;
+		line-height:40px;
+		text-indent:10px;
+		font-weight:300;
+		color:#808080;
+		font-size:16px;
+		background:#f8f8f8;
+	}
+
+	.admincp_apps, .themes {
+		padding:10px 10px 0px 10px;
+	}
+}
 
 .admincp_apps {
+	text-align:center;
 
 	/*
 	display:table;
@@ -75,13 +111,21 @@
 		border:0px;
 	}
 	*/
+	article:hover {
+		box-shadow:none;
+	}
 
 	article {
-		width:100px;
-		height:120px;
+		width:130px;
+		height:130px;
 		display:inline-block;
 		margin:0px 15px 20px 0px;
 		position:relative;
+		text-align:center;
+		background:@blockBg;
+		border:1px lighten(#dfdfdf, 5%) solid;
+		box-shadow:0 0 15px 0 rgba(0, 0, 0, 0.1);
+		transition:@transition;
 
 		a, a:hover {
 			display:block;
@@ -94,13 +138,14 @@
 
 			span {
 				position:absolute;
-				bottom:-20px;
-				left:0px;
-				right:0px;
+				bottom:-16px;
+				left:4px;
+				right:4px;
 				font-size:12px;
 				overflow:hidden;
 				text-overflow:ellipsis;
 				white-space:nowrap;
+				text-align:center;
 			}
 		}
 	}
@@ -108,10 +153,11 @@
 
 .app_icons {
 	display:block;
-	width:100px;
-	height:100px;
+	width:95px;
+	height:95px;
 	position:relative;
-	margin:auto;
+	margin:7px auto 0px auto;
+	background-size:contain;
 
 	i {
 		font-style:normal;
@@ -132,5 +178,28 @@
 		color:@brandPrimaryColor;
 		*/
 		color:#fff;
+	}
+}
+
+.upgrade-product {
+	a, a:hover {
+		display:block;
+		position:absolute;
+		left:10px;
+		bottom:10px;
+		right:10px;
+		padding:10px 0px;
+		text-align:center;
+		font-size:13px;
+		font-weight:200;
+		color:#fff;
+		border:1px #fff solid;
+		border-radius:3px;
+	}
+
+	a:hover {
+		background:@brandPrimary;
+		color:@brandPrimaryColor;
+		border-color:@brandPrimary;
 	}
 }

@@ -2,17 +2,43 @@
 
 namespace Core;
 
+use Core\Theme\Object;
+
 class Theme extends Model {
 	private static $_active;
 
-	public function __construct() {
+	public function __construct($flavorId = null) {
 		parent::__construct();
-		if (!self::$_active) {
+
+		if ($flavorId !== null) {
 			self::$_active = $this->db->select('t.*, ts.folder AS flavor_folder')
-				->from(':theme', 't')
-				->join(':theme_style', 'ts', ['t.theme_id' => ['=' => 'ts.theme_id'], 'ts.is_default' => 1])
-				->where(['t.is_default' => 1])
+				->from(':theme_style', 'ts')
+				->join(':theme', 't', ['t.theme_id' => ['=' => 'ts.theme_id']])
+				->where(['ts.style_id' => (int) $flavorId])
 				->get();
+
+			if (!self::$_active) {
+				throw new \Exception('Not a valid flavor.');
+			}
+		}
+
+		if (!self::$_active) {
+			$cookie = \Phpfox::getCookie('flavor_id');
+
+			if ($cookie) {
+				self::$_active = $this->db->select('t.*, ts.folder AS flavor_folder')
+					->from(':theme_style', 'ts')
+					->join(':theme', 't', ['t.theme_id' => ['=' => 'ts.theme_id']])
+					->where(['ts.style_id' => (int) $cookie])
+					->get();
+			}
+			else {
+				self::$_active = $this->db->select('t.*, ts.folder AS flavor_folder')
+					->from(':theme', 't')
+					->join(':theme_style', 'ts', ['t.theme_id' => ['=' => 'ts.theme_id'], 'ts.is_default' => 1])
+					->where(($cookie ? ['t.theme_id' => (int) $cookie] : ['t.is_default' => 1]))
+					->get();
+			}
 
 			if (!self::$_active || defined('PHPFOX_CSS_FORCE_DEFAULT')) {
 				self::$_active = [
@@ -30,8 +56,39 @@ class Theme extends Model {
 
 		if ($zip === null) {
 			$zip = $file . 'import.zip';
-			file_put_contents($zip, file_get_contents('php://input'));
+			if (isset($_FILES['ajax_upload'])) {
+				file_put_contents($zip, file_get_contents($_FILES['ajax_upload']['tmp_name']));
+			}
+			else {
+				file_put_contents($zip, file_get_contents('php://input'));
+			}
 		}
+
+		$exists = false;
+		if ($extra !== null && isset($extra->id)) {
+			foreach ($this->all() as $theme) {
+				if ($theme->internal_id == $extra->id) {
+					$exists = $theme;
+
+					break;
+				}
+			}
+		}
+
+		/*
+		if ($exists instanceof Object) {
+			$Zip = new \ZipArchive();
+			$Zip->open($zip);
+			$Zip->extractTo($file);
+			$Zip->close();
+
+			$this->db->update(':theme', ['website' => json_encode($extra)], ['theme_id' => $exists->theme_id]);
+			$this->db->update(':setting', array('value_actual' => ((int) \Phpfox::getParam('core.css_edit_id') + 1)), 'var_name = \'css_edit_id\'');
+			$this->cache->del('setting');
+
+			return $exists;
+		}
+		*/
 
 		$Zip = new \ZipArchive();
 		$Zip->open($zip);
@@ -44,10 +101,22 @@ class Theme extends Model {
 			if ($File->extension($f) == 'json') {
 				$data = json_decode(file_get_contents($file . $f));
 
+				$isUpdate = false;
+				if ($exists instanceof Object) {
+					$isUpdate = $exists->theme_id;
+					$this->db->update(':theme', ['website' => json_encode($extra)], ['theme_id' => $exists->theme_id]);
+					$this->db->update(':setting', array('value_actual' => ((int) \Phpfox::getParam('core.css_edit_id') + 1)), 'var_name = \'css_edit_id\'');
+					$this->cache->del('setting');
+				}
+
 				$themeId = $this->make([
 					'name' => $data->name,
 					'extra' => ($extra ? json_encode($extra) : null)
-				], $data->files);
+				], $data->files, $isUpdate);
+
+				if ($isUpdate) {
+					continue;
+				}
 
 				$File->delete_directory($file);
 				$iteration = 0;
@@ -58,7 +127,9 @@ class Theme extends Model {
 						'theme_id' => $themeId,
 						'name' => $flavorName,
 						'folder' => $flavorId,
-						'is_default' => ($iteration === 1 ? '1' : '0')
+						'is_default' => ($iteration === 1 ? '1' : '0'),
+						'is_active' => 1,
+						'created' => PHPFOX_TIME
 					]);
 				}
 			}
@@ -76,7 +147,7 @@ class Theme extends Model {
 	 * @param null $files
 	 * @return Theme\Object
 	 */
-	public function make($val, $files = null) {
+	public function make($val, $files = null, $isUpdate = false) {
 		/*
 		$check = $this->db->select('COUNT(*) AS total')
 			->from(':theme')
@@ -87,14 +158,20 @@ class Theme extends Model {
 			throw error('Folder already exists.');
 		}
 		*/
-		$id = $this->db->insert(':theme', [
-			'name' => $val['name'],
-			// 'folder' => $val['folder'],
-			'website' => (isset($val['extra']) ? $val['extra'] : null),
-			'created' => PHPFOX_TIME,
-			'is_active' => 1
-		]);
-		$this->db->update(':theme', ['folder' => $id], ['theme_id' => $id]);
+
+		if (!$isUpdate) {
+			$id = $this->db->insert(':theme', [
+				'name' => $val['name'],
+				'folder' => '__',
+				'website' => (isset($val['extra']) ? $val['extra'] : null),
+				'created' => PHPFOX_TIME,
+				'is_active' => 1
+			]);
+			$this->db->update(':theme', ['folder' => $id], ['theme_id' => $id]);
+		}
+		else {
+			$id = $isUpdate;
+		}
 
 		if ($files !== null) {
 			foreach ($files as $name => $content) {
@@ -116,7 +193,8 @@ class Theme extends Model {
 			'is_active' => 1,
 			'is_default' => 1,
 			'name' => 'Default',
-			// 'folder' => 'default'
+			'created' => PHPFOX_TIME,
+			'folder' => '__'
 		]);
 		$this->db->update(':theme_style', ['folder' => $flavorId], ['style_id' => $flavorId]);
 
@@ -166,10 +244,18 @@ class Theme extends Model {
 	 */
 	public function get($id = null) {
 		$data = self::$_active;
+		if ($id === null && !$data) {
+			$data = $this->db->select('t.*, ts.style_id AS flavor_id, ts.folder AS flavor_folder')
+				->from(':theme', 't')
+				->join(':theme_style', 'ts', ['t.theme_id' => ['=' => 'ts.theme_id']])
+				->where(['t.is_default' => 1])
+				->get();
+		}
+
 		if ($id !== null) {
 			$data = $this->db->select('t.*, ts.style_id AS flavor_id, ts.folder AS flavor_folder')
 				->from(':theme', 't')
-				->join(':theme_style', 'ts', ['t.theme_id' => ['=' => 'ts.theme_id'], 'ts.is_default' => 1])
+				->join(':theme_style', 'ts', ['t.theme_id' => ['=' => 'ts.theme_id']])
 				->where(['t.theme_id' => (int) $id])
 				->get();
 		}

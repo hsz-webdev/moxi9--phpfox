@@ -1,7 +1,7 @@
 <?php
 /**
  * [PHPFOX_HEADER]
- * 
+ *
  * @copyright		[PHPFOX_COPYRIGHT]
  * @author			Raymond Benc
  * @package 		Phpfox
@@ -13,22 +13,7 @@ defined('PHPFOX') or exit('NO DICE!');
 @ini_set('memory_limit', '-1');
 @set_time_limit(0);
 
-if (!function_exists('memory_get_usage'))
-{
-	function memory_get_usage() {}
-}
-
-if (function_exists('get_magic_quotes_runtime') && get_magic_quotes_runtime())
-{
-	if (preg_match('/5\.3\.(.*)/i', PHP_VERSION))
-	{
-		ini_set('magic_quotes_runtime', 0);
-	}
-	else
-	{
-		set_magic_quotes_runtime(0);
-	}    
-}
+require(PHPFOX_DIR . 'include' . PHPFOX_DS . 'library' . PHPFOX_DS . 'phpfox' . PHPFOX_DS . 'functions' . PHPFOX_DS . 'fallback.php');
 
 if (!isset($_SERVER['HTTP_USER_AGENT']))
 {
@@ -43,24 +28,46 @@ define('PHPFOX_TIME_START', array_sum(explode(' ', microtime())));
 header('Content-type: text/html; charset=utf-8');
 
 // Require the needed setting and class files
+/*
+ * @depreciated 4.0.5
 if (file_exists(PHPFOX_DIR . 'include' . PHPFOX_DS . 'setting' . PHPFOX_DS . 'dev.sett.php') && !defined('PHPFOX_DEBUG'))
 {
 	require_once(PHPFOX_DIR . 'include' . PHPFOX_DS . 'setting' . PHPFOX_DS . 'dev.sett.php');
 }
+*/
+if (file_exists(PHPFOX_DIR . 'file/settings/debug.sett.php') && !defined('PHPFOX_DEBUG')) {
+	require(PHPFOX_DIR . 'file/settings/debug.sett.php');
+}
 
 require_once(PHPFOX_DIR . 'include' . PHPFOX_DS . 'setting' . PHPFOX_DS . 'constant.sett.php');
 
-if (!file_exists(PHPFOX_DIR_SETTINGS . 'license.sett.php')) {
+$old = PHPFOX_DIR. '../include/setting/server.sett.php';
+if (!file_exists(PHPFOX_DIR_SETTINGS . 'license.sett.php')
+	|| !file_exists(PHPFOX_DIR_SETTINGS . 'server.sett.php')
+	|| file_exists($old)
+
+) {
 	define('PHPFOX_NO_PLUGINS', true);
 	define('PHPFOX_NO_USER_SESSION', true);
 	define('PHPFOX_NO_CSRF', true);
 	define('PHPFOX_INSTALLER', true);
 	define('PHPFOX_INSTALLER_NO_TMP', true);
 	define('PHPFOX_NO_RUN', true);
+
+	if (file_exists($old)
+		&& !defined('PHPFOX_IS_UPGRADE')
+		&& !class_exists('Phpfox_Installer', false)) {
+		define('PHPFOX_IS_UPGRADE', true);
+		if (!defined('PHPFOX_DEBUG')) {
+			define('PHPFOX_DEBUG', true);
+		}
+	}
 }
 else {
 	require(PHPFOX_DIR_SETTINGS . 'license.sett.php');
-	define('PHPFOX_IS_TECHIE', ((PHPFOX_LICENSE_ID == 'techie' || preg_match('/techie\_(.*?)/i', PHPFOX_LICENSE_ID)) ? true : false));
+	if (!defined('PHPFOX_IS_TECHIE')) {
+		define('PHPFOX_IS_TECHIE', (((PHPFOX_LICENSE_ID == 'techie' || preg_match('/techie\_(.*?)/i', PHPFOX_LICENSE_ID)) && !defined('PHPFOX_IS_TRIAL')) ? true : false));
+	}
 }
 
 // Set error reporting enviroment
@@ -112,15 +119,17 @@ require(PHPFOX_DIR_LIB_CORE . 'module' . PHPFOX_DS . 'service.class.php');
 require(PHPFOX_DIR_LIB_CORE . 'module' . PHPFOX_DS . 'component.class.php');
 
 // No need to load the debug class if the debug is disabled
-if (PHPFOX_DEBUG)
-{
+if (PHPFOX_DEBUG) {
 	require_once(PHPFOX_DIR_LIB_CORE . 'debug' . PHPFOX_DS . 'debug.class.php');
 	$handler = new Whoops\Handler\PrettyPageHandler();
-	$handler->setEditor('textmate');
+	$handler->setEditor('phpstorm');
 
 	$whoops = new Whoops\Run;
 	$whoops->pushHandler($handler);
 	$whoops->register();
+}
+else {
+
 }
 
 // set_error_handler(array('Phpfox_Error', 'errorHandler'));
@@ -131,7 +140,47 @@ date_default_timezone_set('GMT');
 
 define('PHPFOX_TIME', time());
 
+$version = PHPFOX_DIR_SETTINGS . 'version.sett.php';
+if (file_exists($version)) {
+	$version = require($version);
+
+	if (version_compare(Phpfox::VERSION, $version['version'], '>')) {
+		define('PHPFOX_NO_PLUGINS', true);
+		define('PHPFOX_NO_USER_SESSION', true);
+		define('PHPFOX_NO_CSRF', true);
+		define('PHPFOX_INSTALLER', true);
+		define('PHPFOX_INSTALLER_NO_TMP', true);
+		define('PHPFOX_NO_RUN', true);
+		define('PHPFOX_IS_UPGRADE', true);
+	}
+}
+
 Phpfox::getLib('setting')->set();
+
+if (defined('PHPFOX_INSTALLER')) {
+	if (isset($_GET['phpfox-upgrade']) || !defined('PHPFOX_IS_UPGRADE')) {
+		require(PHPFOX_DIR . 'install/include/installer.class.php');
+		(new Phpfox_Installer())->run();
+		exit;
+	}
+
+	$sMessage = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">';
+	$sMessage .= '<html xmlns="http://www.w3.org/1999/xhtml" lang="en">';
+	$sMessage .= '<head><title>Upgrade Taking Place</title><meta http-equiv="Content-Type" content="text/html;charset=utf-8" /><style type="text/css">body{font-family:verdana; color:#000; font-size:9pt; margin:5px; background:#fff;} img{border:0px;}</style></head><body>';
+	$sMessage .= file_get_contents(PHPFOX_DIR . 'static' . PHPFOX_DS . 'upgrade.html');
+	$sMessage .= '</body></html>';
+	echo $sMessage;
+	exit;
+}
+
+if (!defined('PHPFOX_NO_PLUGINS')) {
+	Phpfox_Plugin::set();
+}
+
+if (Phpfox_Request::instance()->get('ping-no-session')) {
+	define('PHPFOX_NO_SESSION', true);
+	define('PHPFOX_NO_APPS', true);
+}
 
 // Start a session if needed
 if (!defined('PHPFOX_NO_SESSION'))

@@ -16,15 +16,22 @@
 {% endmacro %}
 
 {% macro select(params) %}
-	<div class="formGroup formSelection{% if params.multiple %}Multiple{% endif %}">
+	<div class="table formSelection{% if params.multiple %}multiple{% endif %}">
 		{% if params.title %}
-			<label for="__form_{{ params.name }}">{{ params.title }}</label>
+			<div class="table_left">{{ params.title }}</div>
 		{% endif %}
-		<select id="__form_{{ params.name }}" name="{{ params.name }}{% if params.multiple %}[]{% endif %}"{% if params.multiple %} multiple{% endif %}>
-			{% for key, option in params.options %}
-				<option value="{{ key }}"{% if option in params.values or params.value == key %} selected="selected"{% endif %}>{{ option }}</option>
-			{% endfor %}
-		</select>
+		<div class="table_right">
+			<select id="__form_{{ params.name }}" name="val[{{ params.name }}]{% if params.multiple %}[]{% endif %}"{% if params.multiple %} multiple{% endif %}>
+				{% for key, option in params.options %}
+					<option value="{{ key }}"{% if option in params.values or params.value == key %} selected="selected"{% endif %}>{{ option }}</option>
+				{% endfor %}
+			</select>
+			{% if params.info %}
+			<div class="extra_info">
+				{{ params.info }}
+			</div>
+			{% endif %}
+		</div>
 	</div>
 {% endmacro %}
 
@@ -69,10 +76,12 @@
 		{% set name = name.name %}
 	{% endif %}
 
-	<div class="formGroup">
+	<div class="table">
 		{% if title is not null %}
-			<label for="__form_{{ name }}">{{ title }}</label>
+		<div class="table_left">{{ title }}</div>
 		{% endif %}
-		<textarea id="__form_{{ name }}" name="{{ name }}" placeholder="{{ placeholder }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}>{{ value|e }}</textarea>
+		<div class="table_right">
+			<textarea id="__form_{{ name }}" name="val[{{ name }}]" placeholder="{{ placeholder }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}>{{ value|e }}</textarea>
+		</div>
 	</div>
 {% endmacro %}

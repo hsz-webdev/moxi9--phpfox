@@ -11,12 +11,12 @@ class Setting extends \Core\Model {
 
 			self::$_settings = $this->cache->get('app_settings');
 			if (is_bool(self::$_settings)) {
-				$App = new \Core\App();
+				$App = new \Core\App(true);
 				foreach ($App->all() as $_app) {
 					if ($_app->settings) {
 						foreach ($_app->settings as $key => $value) {
 							$thisValue = (isset($value->value) ? $value->value : null);
-							$value = $this->db->select('*')->from(':setting')->where(['product_id' => $_app->id, 'var_name' => $key])->get();
+							$value = $this->db->select('*')->from(':setting')->where(['var_name' => $key])->get();
 							if (isset($value['value_actual'])) {
 								$thisValue = $value['value_actual'];
 							}

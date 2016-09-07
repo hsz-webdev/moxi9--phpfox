@@ -58,7 +58,11 @@ defined('PHPFOX') or exit('NO DICE!');
 					{$aItem.text|parse|highlight:'search'|split:55}
 					{else}
 					<div class="extra_info">
-						{$aItem.text|strip_tags|highlight:'search'|split:55|shorten:$iShorten'...'}
+						{if $iShorten}
+						{$aItem.text|parse|highlight:'search'|split:55|shorten:$iShorten:'...'}
+						{else}
+						{$aItem.text|parse|highlight:'search'|split:55}
+						{/if}
 					</div>
 				{/if}
 				</div>			
@@ -69,6 +73,12 @@ defined('PHPFOX') or exit('NO DICE!');
 			{/if}			
 			{if isset($aItem.tag_list)}			
 			{module name='tag.item' sType=$sTagType sTags=$aItem.tag_list iItemId=$aItem.blog_id iUserId=$aItem.user_id sMicroKeywords='keywords'}			
+			{/if}
+
+			{if !isset($bBlogView) && isset($aItem.categories)}
+			<div class="blog-category">
+				Posted in: {$aItem.categories}
+			</div>
 			{/if}
 			
 			{if !isset($bBlogView)}

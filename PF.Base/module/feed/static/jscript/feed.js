@@ -48,12 +48,13 @@ $Core.resetActivityFeedForm = function()
 {
 	$('._load_is_feed').removeClass('active');
 	$('#panel').hide();
+	$('body').removeClass('panel_is_active');
 
 	$('.activity_feed_form_attach li a').removeClass('active');
 	$('.activity_feed_form_attach li a:first').addClass('active');	
 	$('.global_attachment_holder_section').hide();
 	$('#global_attachment_status').show();		
-	$('.global_attachment_holder_section textarea').val($('#global_attachment_status_value').html()).css({height: $sCssHeight});
+	$('.global_attachment_holder_section textarea').val('').css({height: $sCssHeight});
 		
 	$('.activity_feed_form_button_status_info').hide();
 	$('.activity_feed_form_button_status_info textarea').val('');	
@@ -234,16 +235,84 @@ $Core.resetFeedForm = function(f) {
 	$('.feed_form_textarea textarea').removeClass('dont-unbind');
 };
 
+window.onerror = function(e) {
+	var l = $('.feed_stream:not(.built)').length;
+	if (l) {
+		$('.feed_stream.built').each(function() {
+			if ($(this).data('feed-url')) {
+				$(this).replaceWith('<div class="error_message">' + e + '</div>');
+				$Core.loadInit();
+			}
+		});
+	}
+};
+
 $Behavior.activityFeedProcess = function() {
 
-	$('.feed_stream:not(.built)').each(function() {
-		var t = $(this),
-			s = document.createElement('script');
-			t.addClass('built');
+	$('.comment-limit:not(.is_checked)').each(function() {
+		var t = $(this);
+		t.addClass('is_checked');
+		var total = t.find('.js_mini_feed_comment').length;
+		var limit = t.data('limit');
+		var iteration = total;
+		var totalHidden = 0;
+		t.find('.js_mini_feed_comment').each(function() {
+			var l = $(this);
+			iteration--;
+			if (iteration < limit) {
+				return false;
+			}
 
+			totalHidden++;
+			l.hide();
+		});
+
+		if (totalHidden) {
+			var cHolder = t.parent().find('.comment_pager_holder:first');
+			cHolder.hide();
+			var viewMore = $('<a href="#" class="load_more_comments dont-unbind">View Previous Comments</a>');
+			cHolder.before(viewMore);
+			viewMore.click(function() {
+				t.find('.js_mini_feed_comment').show();
+				$(this).remove();
+				cHolder.show();
+				return false;
+			});
+		}
+	});
+
+	$('.activity_feed_content_display:not(.is_built)').each(function() {
+		var t = $(this);
+
+		t.addClass('is_built');
+		if (t.outerHeight() > 300) {
+			t.css('position', 'relative');
+			t.prepend('<a href="#" class="feed_show_more_content no_ajax" onclick="$(this).parent().css(\'max-height\', \'none\'); $(this).remove(); return false;">Show More</a>');
+		}
+	});
+
+	/*
+	$('.load_more_comments').click(function() {
+		$.ajax({
+			url: getParam('sJsAjax'),
+			data: 'core[call]=comment.viewMoreFeed',
+			success: function(e) {
+				p(e);
+			}
+		});
+
+		return false;
+	});
+	*/
+
+	$('.feed_stream:not(.built)').each(function() {
+		var t = $(this);
+
+		t.addClass('built');
+
+		var s = document.createElement('script');
 		s.type = 'application/javascript';
 		s.src = t.data('feed-url');
-
 		document.head.appendChild(s);
 
 		/*
@@ -337,10 +406,15 @@ $Behavior.activityFeedProcess = function() {
 		$('.activity_feed_form_button_status_info textarea').keydown(function(){$Core.resizeTextarea($(this));});
 		
 		$('#global_attachment_status textarea').focus(function()
-		{			
+		{
+			var t = $(this);
+			if (t.hasClass('_is_set')) {
+				return;
+			}
 			// if ($(this).val() == $('#global_attachment_status_value').html())
 			{
-				$(this).val('');
+				t.addClass('_is_set');
+				// $(this).val('');
 				$(this).css({height: '50px'});
 				$('.activity_feed_form_button').show();
 				$(this).addClass('focus');
@@ -365,7 +439,7 @@ $Behavior.activityFeedProcess = function() {
 			
 			if (($('#global_attachment_status textarea').val() == $('#global_attachment_status_value').html() && empty($sDefaultValue)) || !$bIsDefault)
 			{
-				$(this).val('');
+				// $(this).val('');
 				$(this).css({height: '50px'});
 				
 				$(this).addClass('focus');
@@ -379,14 +453,14 @@ $Behavior.activityFeedProcess = function() {
 				var oStatusUpdateTextareaFilled = $('#global_attachment_status textarea');
 				
 				if ($sStatusUpdateValue == oStatusUpdateTextareaFilled.val()){
-					oStatusUpdateTextareaFilled.val('');
+					// oStatusUpdateTextareaFilled.val('');
 				}
 			}
 			else{
 				var oCustomTextareaFilled = $('.activity_feed_form_button_status_info textarea');
 			
 				if ($sCustomPhrase == oCustomTextareaFilled.val()){
-					oCustomTextareaFilled.val('');				
+					// oCustomTextareaFilled.val('');
 				}				
 			}			
 			
@@ -496,11 +570,11 @@ $Behavior.activityFeedProcess = function() {
 					|| (!$bButtonSubmitActive && $bHasDefaultValue)
 				)
 				{
-					$oCustomTextarea.val($sCustomPhrase).css({height: $sCssHeight});
+					$oCustomTextarea.attr('placeholder', $sCustomPhrase).css({height: $sCssHeight});
 				}
 				else if ($sStatusUpdateTextarea != $sStatusUpdateValue && $bButtonSubmitActive && !empty($sStatusUpdateTextarea))
 				{
-					$oCustomTextarea.val($sStatusUpdateTextarea);
+					$oCustomTextarea.attr('placeholder', $sStatusUpdateTextarea);
 				}								
 				
 				$('.activity_feed_form_button .button').addClass('button_not_active');
@@ -632,7 +706,11 @@ $Behavior.activityFeedLoader = function()
 		}		
 		
 		$(this).parent().parent().find('.js_feed_comment_process_form:first').show(); 
-		$(this).ajaxCall('comment.add'); 
+		$(this).ajaxCall('comment.add', null, null, null, function(e, self) {
+			$(self).find('textarea').blur();
+			isAddingComment = false;
+		});
+
 		$(this).find('.error_message').remove();
 		$(this).find('textarea:first').removeClass('dont-unbind');
 			
@@ -654,7 +732,7 @@ $Behavior.activityFeedLoader = function()
 		var sCommentForm = $(this).parents('.js_feed_comment_border:first').find('.js_feed_comment_form:first').html();
 		oParent.html(sCommentForm);
 		oParent.find('.js_feed_comment_parent_id:first').val($(this).attr('rel'));
-		
+
 		oParent.find('.js_comment_feed_textarea:first').focus();
 		$Core.commentFeedTextareaClick(oParent.find('.js_comment_feed_textarea:first'));
 		
@@ -682,27 +760,41 @@ $Behavior.activityFeedLoader = function()
 	
 }
 
+var isAddingComment = false;
 $Core.commentFeedTextareaClick = function($oObj)
 {
 	$($oObj).addClass('dont-unbind');
+	$($oObj).blur(function() {
+		$(this).removeClass('dont-unbind');
+	});
 	$($oObj).keydown(function(e)
 	{
+		if (isAddingComment) {
+			p('adding comment. Please wait...');
+			return false;
+		}
 		if (e.which == 13) {
+
 			e.preventDefault();
 			$($oObj).parents('form:first').trigger('submit');
+			$($oObj).removeClass('dont-unbind');
+			// $($oObj).unbind();
+			$Core.loadInit();
+			p('is added...');
+			isAddingComment = true;
 
 			return false;
 		}
 
-		if ($(this).hasClass('no_resize_textarea')){
-			return;
+		if ($(this).hasClass('no_resize_textarea')) {
+			return null;
 		}
 		$Core.resizeTextarea($(this));
 	});
 		
 	if ($($oObj).val() == $('.js_comment_feed_value').html())
 	{
-		$($oObj).val('');
+		// $($oObj).val('');
 	}
 	
 	$($oObj).addClass('js_comment_feed_textarea_focus').addClass('is_focus');
@@ -770,63 +862,88 @@ $ActivityFeedCompleted.photo = function()
 	$('#global_attachment_photo_file_input').val('');
 }
 
-var sToReplace = '';
-
+var sToReplace = '', buildingCache = false;
 function attachFunctionTagger(sSelector)
 {
-	$(sSelector).data('selector', sSelector).keyup(function(eventObject, sSelector){				
-				var sInput = $($(this).data('selector')).val();
-				
-				var iInputLength = sInput.length;
-				var iAtSymbol = sInput.lastIndexOf('@');
-				
+	if ($(sSelector).length && !buildingCache && (typeof $Cache == 'undefined' || typeof $Cache.friends == 'undefined')) {
+		buildingCache = true;
+		$.ajaxCall('friend.buildCache','','GET');
+	}
+
+	var customSelector = function () {
+		return '_' + Math.random().toString(36).substr(2, 9);
+	};
+	var increment = 0;
+	$(sSelector).each(function() {
+		increment++;
+		var t = $(this), selector = '_custom_' + customSelector() + '_' + increment;
+		if (t.data('selector')) {
+			t.removeClass(t.data('selector').replace('.', ''));
+		}
+		t.addClass(selector);
+		t.data('selector', '.' + selector);
+	});
+
+	$(sSelector).keyup(function() {
+		/*
+		increment++;
+		var t = $(this), selector = '_custom_' + customSelector() + '_' + increment;
+		if (t.data('selector')) {
+			t.removeClass(t.data('selector').replace('.', ''));
+		}
+
+		t.addClass(selector);
+		*/
+		var t = $(this);
+		var sInput = t.val();
+		var iInputLength = sInput.length;
+		var iAtSymbol = sInput.lastIndexOf('@');
 				if (sInput == '@' || empty(sInput) || iAtSymbol < 0 || iAtSymbol == (iInputLength-1))
 				{
 					$($(this).data('selector')).siblings('.chooseFriend').hide(function(){$(this).remove();});
 					return;
-				}			
+				}
 				
 				var sNameToFind = sInput.substring(iAtSymbol+1, iInputLength);				
 				
 				/* loop through friends */
 				var aFoundFriends = [], sOut = '';
-				
 				for (var i in $Cache.friends)
 				{
 					if ($Cache.friends[i]['full_name'].toLowerCase().indexOf(sNameToFind.toLowerCase()) >= 0)
 					{
 						var sNewInput = sInput.substr(0, iAtSymbol).replace(/\'/g,'&#39;').replace(/\"/g,'&#34;');
 						sToReplace = sNewInput;
-						
 						aFoundFriends.push({user_id: $Cache.friends[i]['user_id'], full_name: $Cache.friends[i]['full_name'], user_image: $Cache.friends[i]['user_image']});
-				
-						sOut += '<div class="tagFriendChooser" onclick="$(\''+ $(this).data('selector') +'\').val(sToReplace + \'\' + (getParam(\'bEnableMicroblogSite\') ? \'@' + $Cache.friends[i]['user_name'] + '\' : \'[x=' + $Cache.friends[i]['user_id'] + ']' + $Cache.friends[i]['full_name'].replace(/\&#039;/g,'\\\'') +'[/x]\') + \' \').putCursorAtEnd();$(\''+$(this).data('selector')+'\').siblings(\'.chooseFriend\').remove();"><div class="tagFriendChooserImage"><img style="vertical-align:middle;width:25px; height:25px;" src="'+$Cache.friends[i]['user_image'] + '"> </div><span>' + (($Cache.friends[i]['full_name'].length > 25) ?($Cache.friends[i]['full_name'].substr(0,25) + '...') : $Cache.friends[i]['full_name']) + '</span></div>';
+						if ($Cache.friends[i]['user_image'].substr(0, 5) == 'http:') {
+							PF.event.trigger('urer_image_url', $Cache.friends[i]);
+
+							// p($Cache.friends[i]['user_image']);
+
+							$Cache.friends[i]['user_image'] = '<img src="' + $Cache.friends[i]['user_image'] + '" class="_image_32 image_deferred">';
+						}
+
+						sOut += '<div class="tagFriendChooser" onclick="$(\''+ $(this).data('selector') +'\').val(sToReplace + \'\' + (true ? \'@' + $Cache.friends[i]['user_name'] + '\' : \'[x=' + $Cache.friends[i]['user_id'] + ']' + $Cache.friends[i]['full_name'].replace(/\&#039;/g,'\\\'') +'[/x]\') + \' \').putCursorAtEnd();$(\''+$(this).data('selector')+'\').siblings(\'.chooseFriend\').remove();"><div class="tagFriendChooserImage">' + $Cache.friends[i]['user_image'] + '</div><span>' + (($Cache.friends[i]['full_name'].length > 25) ?($Cache.friends[i]['full_name'].substr(0,25) + '...') : $Cache.friends[i]['full_name']) + '</span></div>';
 						/* just delete the fancy choose your friend and recreate it */
 						sOut = sOut.replace("\n", '').replace("\r", '');						
 					}
 				}
+
 				$($(this).data('selector')).siblings('.chooseFriend').remove();
 				if (!empty(sOut)){
 					$($(this).data('selector')).after('<div class="chooseFriend" style="width: '+ $(this).parent().width()+'px;">'+sOut+'</div>');
 				}
-				
-			}).focus(function(){
-				if (typeof $Cache == 'undefined' || typeof $Cache.friends == 'undefined')
-				{
-					$.ajaxCall('friend.buildCache','','GET');
-				}
-			});			
+			});
 }
 
 
 $Behavior.tagger = function()
 {		
-	var aSelectors = ['#js_activity_feed_form > .activity_feed_form_holder > #global_attachment_status > textarea','.js_comment_feed_textarea', '.js_comment_feed_textarea_focus'];
-	/*js_comment_feed_textarea js_comment_feed_textarea_focus is_focus
-	 try to replace a class selector for the ids of all of the inputs that it matches*/
+	var selectors = '#js_activity_feed_form > .activity_feed_form_holder > #global_attachment_status > textarea, .js_comment_feed_textarea, .js_comment_feed_textarea_focus';
+	attachFunctionTagger(selectors);
+	/*
 	for (var i in aSelectors)
 	{
-		
 		if ( $(aSelectors[i]).length >= 1)
 		{			
 			var bChanged = false;
@@ -849,28 +966,21 @@ $Behavior.tagger = function()
 	for (var i in aSelectors)
 	{
 		var sSelector = aSelectors[i];
-				
-		/* Dont tag users in feeds in pages, events or profiles other than mine*/
+
 		if (sSelector == '#pageFeedTextarea' || sSelector == '#eventFeedTextarea'  || sSelector == '#profileFeedTextarea') 
 		{
-			
 			continue;
 		}
 		
 		
 		if ($(sSelector).length > 1)
 		{
-			
 			$.each($(sSelector), function(key, value)
-			{				
-				
-				if ($(value).attr('id') != undefined)
-				{
-					attachFunctionTagger('#'+$(value).attr('id'));
-				}					
+			{
+				attachFunctionTagger($(this));
 			});
-			continue;
 		}
 		attachFunctionTagger(sSelector);
 	}
+	*/
 };

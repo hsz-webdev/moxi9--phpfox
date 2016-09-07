@@ -7,6 +7,7 @@ $Core.searchFriendsInput =
 	aLiveUsers: {},
 	sId: '',
 	bNoSearch: false,
+	isBeingBuilt: false,
 	
 	aFoundUser: {}, // Store the found user here
 	sHtml : '', // Store the final html here. Useful for onBeforePrepend
@@ -31,8 +32,8 @@ $Core.searchFriendsInput =
 		var $sHtml = '';
 		if (!this._get('no_build')){			
 			
-			$sHtml += '<div style="width:' + this._get('width') + '; position:relative;" class="js_friend_search_form" id="' + this.sId + '">';
-			$sHtml += '<input type="text" id="' + this._get('search_input_id') + '" name="null" value="' + this._get('default_value') + '" autocomplete="off" onfocus="$Core.searchFriendsInput.buildFriends(this);" onkeyup="$Core.searchFriendsInput.getFriends(this);" style="width:100%;" class="js_temp_friend_search_input" />';
+			$sHtml += '<div style="position:relative;" class="js_friend_search_form" id="' + this.sId + '">';
+			$sHtml += '<input type="text" id="' + this._get('search_input_id') + '" name="null" placeholder="' + this._get('default_value') + '" autocomplete="off" onfocus="$Core.searchFriendsInput.buildFriends(this);" onkeyup="$Core.searchFriendsInput.getFriends(this);" style="width:100%;" class="js_temp_friend_search_input" />';
 			$sHtml += '<div class="js_temp_friend_search_form" style="display:none;"></div>';
 			$sHtml += '</div>';
 			
@@ -113,16 +114,16 @@ $Core.searchFriendsInput =
 	
 	buildFriends: function($oObj)
 	{
-		$($oObj).val('');
-		
-		if (empty($Cache.friends) && !isset(this.aParams['is_mail']))
+		if (this.isBeingBuilt === false && empty($Cache.friends) && !isset(this.aParams['is_mail']))
 		{
-			$.ajaxCall('friend.buildCache', (this._get('allow_custom') ? '&allow_custom=1' : ''), 'GET');		
+			$($oObj).val('');
+			this.isBeingBuilt = true;
+			$.ajaxCall('friend.buildCache', (this._get('allow_custom') ? '&allow_custom=1' : ''), 'GET');
 		}
 	},
 	
 	getFriends: function($oObj)
-	{		
+	{
 		if (empty($oObj.value))
 		{
 			this.closeSearch($oObj);
@@ -160,7 +161,10 @@ $Core.searchFriendsInput =
 				$iFound++;								
 				
 				$Core.searchFriendsInput.storeUser($aUser['user_id'], $aUser);
-				
+
+				if ($aUser['user_image'].substr(0, 5) == 'http:') {
+					$aUser['user_image'] = '<img src="' + $aUser['user_image'] + '">';
+				}
 				$sHtml += '<li><div rel="' + $aUser['user_id'] + '" class="js_friend_search_link ' + (($iFound === 1 && !$Core.searchFriendsInput._get('global_search')) ? 'js_temp_friend_search_form_holder_focus' : '') + '" onclick="return $Core.searchFriendsInput.processClick(this, \'' + $aUser['user_id'] + '\');"><span class="image">' + $aUser['user_image'] + '</span><span class="user">' + $aUser['full_name'] + '</span></div></li>';
 				if ($iFound > $Core.searchFriendsInput._get('max_search'))
 				{					
@@ -175,12 +179,12 @@ $Core.searchFriendsInput =
 		}
 		
 		if ($iFound)
-		{		
-			if (this._get('global_search')){
-				$sHtml += '<li><a href="#" class="holder_notify_drop_link" onclick="$(this).parents(\'form:first\').submit(); return false;">' + oTranslations['friend.show_more_results_for_search_term'].replace('{search_term}',htmlspecialchars($oObj.value)) + '</a></li>';
+		{
+			if (this._get('global_search')) {
+				$sHtml += '<li><a href="#" class="holder_notify_drop_link" onclick="$(\'#header_search_form\').submit(); return false;">' + oTranslations['friend.show_more_results_for_search_term'].replace('{search_term}',htmlspecialchars($oObj.value)) + '</a></li>';
 			}
 
-			obj.html('<div class="js_temp_friend_search_form_holder" style="width:' + this._get('width') + ';"><ul>' + $sHtml + '</ul></div>').show();
+			obj.html('<div class="js_temp_friend_search_form_holder"><ul>' + $sHtml + '</ul></div>').show();
 		}
 		else
 		{
@@ -213,7 +217,7 @@ $Core.searchFriendsInput =
 		{
 			return false;
 		}
-		
+
 		this.aLiveUsers[$iUserId] = true;
 		$Behavior.reloadLiveUsers = function(){
 			$Core.searchFriendsInput.aLiveUsers = {};
@@ -233,7 +237,7 @@ $Core.searchFriendsInput =
 		$sHtml += '<a href="#" class="friend_search_remove" title="Remove" onclick="$Core.searchFriendsInput.removeSelected(this, ' + $iUserId + ');  return false;">Remove</a>';
 		if (!this._get('inline_bubble'))
 		{
-			$sHtml += '<div class="friend_search_image"><img src="' + $aUser['user_image'] + '" alt="" style="width:25px; height:25px;" /></div>';
+			$sHtml += '<div class="friend_search_image">' + $aUser['user_image'] + '</div>';
 		}
 		$sHtml += '<div class="friend_search_name">' + $aUser['full_name'] + '</div>';
 		if (!this._get('inline_bubble'))

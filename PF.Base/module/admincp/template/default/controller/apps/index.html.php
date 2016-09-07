@@ -11,8 +11,31 @@
 {else}
 
 	<div class="admincp_apps_holder">
+
+		{*
+		{if ($newInstalls)}
+		<section class="new_installs">
+			<h1>Pending Installs</h1>
+			<div class="admincp_apps">
+			{foreach from=$newInstalls item=install}
+			<article>
+				<h1>
+					<a href="{url link='admincp.store' install=$install.id}">
+						<div class="app_icons image_load" data-src="{$install.icon}"></div>
+						<span>{$install.name|clean}</span>
+					</a>
+				</h1>
+			</article>
+			{/foreach}
+			</div>
+		</section>
+		{/if}
+		*}
+
 		<section>
 			<div class="admincp_apps">
+
+				{if count($apps)}
 				{foreach from=$apps item=app}
 				<article>
 					<h1>
@@ -23,10 +46,16 @@
 					</h1>
 				</article>
 				{/foreach}
+				{else}
+				<div class="message">
+					No apps have been installed.
+				</div>
+				{/if}
 			</div>
 		</section>
 
 		<section class="preview">
+			{*
 			<div>
 				{if $aNewProducts}
 					<h1>Apps Pending Installation</h1>
@@ -35,7 +64,11 @@
 					{/foreach}
 				{/if}
 			</div>
-			<a href="http://store.moxi9.com/phpfox/apps" target="_blank">Find More Apps</a>
+			*}
+			<h1>Featured Apps</h1>
+			<div class="phpfox_store_featured" data-type="apps" data-parent="{url link='admincp.store' load='apps'}">
+
+			</div>
 		</section>
 	</div>
 

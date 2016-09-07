@@ -140,7 +140,7 @@ class Forum_Component_Ajax_Ajax extends Phpfox_Ajax
 			
 			Phpfox::getService('forum.thread.process')->updateTrack($aThread['thread_id']);			
 			
-			$aPost['count'] = ($aVals['total_post'] + 1);
+			$aPost['count'] = ($aVals['total_post'] + 2);
 			$this->template()->assign(array(
 					'aPost' => $aPost,
 					'aThread' => Forum_Service_Thread_Thread::instance()->getActualThread($aPost['thread_id']),
@@ -160,7 +160,7 @@ class Forum_Component_Ajax_Ajax extends Phpfox_Ajax
 			}
 		}
 		
-		if (Phpfox::getParam('core.defer_loading_user_images'))
+		// if (Phpfox::getParam('core.defer_loading_user_images'))
 		{
 			$this->call('$Core.loadInit();');
 		}
@@ -699,6 +699,7 @@ class Forum_Component_Ajax_Ajax extends Phpfox_Ajax
 				->show('#js_save_perms')
 				->html('#js_form_perm_group', $aUserGroup['title'])
 				->html('#js_display_list_perms', $this->getContent(false));
+			$this->call('$Core.loadInit();');
 		}
 	}
 	

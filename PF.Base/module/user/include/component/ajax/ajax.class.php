@@ -742,8 +742,10 @@ class User_Component_Ajax_Ajax extends Phpfox_Ajax
 				 * 
 				 */
 					Phpfox::addMessage(Phpfox::getPhrase('user.profile_photo_successfully_updated'));
+
+					Phpfox::setCookie('recache_image', 'yes', (PHPFOX_TIME + 600));
 					
-					$this->call('window.location.href = \'' . Phpfox_Url::instance()->makeUrl('user.photo') . '\';');
+					$this->call('window.location.href = \'' . Phpfox_Url::instance()->makeUrl('profile') . '\';');
 				/*
 				}
 				else 
@@ -871,7 +873,7 @@ class User_Component_Ajax_Ajax extends Phpfox_Ajax
 		
 		if (Phpfox::getService('user.group.setting.process')->update($this->get('id'), $aVals))
 		{
-			$this->slideUp('#global_ajax_message');
+			$this->hide('#global_ajax_message');
 		}
 	}
 	
@@ -973,6 +975,7 @@ class User_Component_Ajax_Ajax extends Phpfox_Ajax
 			$this->call('$Behavior.defer_images();');
 			// $this->call('$Core.loadInit();');
 		}
+    $this->call('$Behavior.globalInit();');
 	}
 	
 	public function addInactiveJob()

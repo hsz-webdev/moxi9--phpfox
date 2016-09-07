@@ -88,14 +88,8 @@ defined('PHPFOX') or exit('NO DICE!');
 			<div id="activity_feed_upload_error" style="display:none;"><div class="error_message" id="activity_feed_upload_error_message"></div></div>
 			
 			<div class="global_attachment_holder_section" id="global_attachment_status" style="display:block;">
-				<div id="global_attachment_status_value" style="display:none;">{if isset($aFeedCallback.module) || defined('PHPFOX_IS_USER_PROFILE')}{phrase var='feed.write_something'}{else}{phrase var='feed.what_s_on_your_mind'}{/if}</div>
+				<div id="global_attachment_status_value" style="display:none;"></div>
 				<textarea {if isset($aPage)} id="pageFeedTextarea" {else} {if isset($aEvent)} id="eventFeedTextarea" {else} {if isset($bOwnProfile) && $bOwnProfile == false}id="profileFeedTextarea" {/if}{/if}{/if} cols="60" rows="8" name="val[user_status]" placeholder="{if isset($aFeedCallback.module) || defined('PHPFOX_IS_USER_PROFILE')}{phrase var='feed.write_something'}{else}{phrase var='feed.what_s_on_your_mind'}{/if}"></textarea>
-                {if isset($bLoadCheckIn) && $bLoadCheckIn == true}
-                    <script type="text/javascript">
-                        oTranslations['feed.at_location'] = "{phrase var='feed.at_location'}";
-                    </script>
-                    <div id="js_location_feedback"></div>
-                {/if}
 			</div>
 			
 			{foreach from=$aFeedStatusLinks item=aFeedStatusLink}
@@ -120,9 +114,9 @@ defined('PHPFOX') or exit('NO DICE!');
 				<textarea id="activity_feed_textarea_status_info" cols="60" rows="8" name="val[status_info]"></textarea>
 			</div>
 			<div class="activity_feed_form_button_position">
-				
+
 				{if ((defined('PHPFOX_IS_PAGES_VIEW') && $aPage.is_admin) || ((Phpfox::isModule('share') && !defined('PHPFOX_IS_USER_PROFILE') && !defined('PHPFOX_IS_PAGES_VIEW') && !defined('PHPFOX_IS_EVENT_VIEW') && ((Phpfox::getParam('share.share_on_facebook') && Phpfox::getParam('facebook.facebook_app_id') && Phpfox::getParam('facebook.facebook_secret')) || Phpfox::getParam('share.share_on_twitter'))) || (defined('PHPFOX_IS_USER_PROFILE') && isset($aUser.user_id) && $aUser.user_id == Phpfox::getUserId() && Profile_Service_Profile::instance()->timeline() && Phpfox::getParam('feed.can_add_past_dates'))))}
-					
+
 					<div id="activity_feed_share_this_one">
 						<ul>
 							{if (Phpfox::isModule('share') && !defined('PHPFOX_IS_USER_PROFILE') && !defined('PHPFOX_IS_PAGES_VIEW') && !defined('PHPFOX_IS_EVENT_VIEW') && ((Phpfox::getParam('share.share_on_facebook') && Phpfox::getParam('facebook.facebook_app_id') && Phpfox::getParam('facebook.facebook_secret')) || Phpfox::getParam('share.share_on_twitter')))}
@@ -137,7 +131,7 @@ defined('PHPFOX') or exit('NO DICE!');
 							<li>
 								<div class="parent">
 									<select name="custom_pages_post_as_page">
-										<option value="{$aPage.page_id}">{phrase var='feed.post_as'}...</option>
+										<option value="{$aPage.page_id}">Posting as: {$aPage.full_name|clean|shorten:20:'...'}</option>
 										<option value="{$aPage.page_id}">{$aPage.full_name|clean|shorten:20:'...'}</option>
 										<option value="0">{$sGlobalUserFullName|shorten:20:'...'}</option>
 									</select>							

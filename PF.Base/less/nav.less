@@ -76,6 +76,12 @@
 }
 */
 
+#panel {
+	.js_temp_friend_search_form {
+		top:@headerHeight;
+	}
+}
+
 #header_search_form {
 	position:relative;
 
@@ -116,6 +122,7 @@
 	bottom:0px;
 	z-index:300;
 	width:@navWidth;
+	overflow:auto;
 }
 
 #header_menu {
@@ -370,7 +377,7 @@ div#content div.menu, div#left div.menu, div#right div.menu {
 		right:10px;
 		top:11px;
 		font-size:@fontSizeBase - 6;
-		font-weight:500;
+		font-weight:600;
 		background:@brandPrimary;
 		color:@brandPrimaryColor;
 		padding:2px 4px;
@@ -408,7 +415,7 @@ div#content div.menu, div#left div.menu, div#right div.menu {
 	color:@linkColor;
 	height:auto;
 	line-height:normal;
-	padding:4px 10px;
+	padding:4px 6px;
 	text-transform:uppercase;
 	font-size:@fontSizeBase - 2;
 }
@@ -452,7 +459,7 @@ div#content div.menu, div#left div.menu, div#right div.menu {
 #pf_admin {
 	position:fixed;
 	bottom:0px;
-	right:10px;
+	right:0px;
 	background:#0c0c0c;
 	color:#808080;
 	z-index:10000;
@@ -469,8 +476,10 @@ div#content div.menu, div#left div.menu, div#right div.menu {
 		i {
 			font-size:16px;
 			position:absolute;
-			left:12px;
+			left:0px;
 			top:7px;
+			right:0px;
+			text-align:center;
 			color:#808080;
 		}
 
@@ -498,6 +507,36 @@ div#content div.menu, div#left div.menu, div#right div.menu {
 	> a.site_is_offline:hover {
 		i {
 			color:#fff;
+		}
+	}
+}
+
+.section_menu {
+	background:@blockBg;
+	margin-bottom:@blockMarginBottom;
+	border-radius:@blockRadius;
+
+	ul {
+		li {
+			display:block;
+
+			a, a:hover {
+				display:block;
+				color:lighten(@blockColor, 10%);
+				padding:10px;
+			}
+
+			a:hover {
+				background:darken(@blockBg, 4%);
+				color:darken(@blockColor, 8%);
+				transition:@transition;
+			}
+
+			a.active, a.active:hover {
+				background:@brandPrimary;
+				color:@brandPrimaryColor;
+				transition:@transition;
+			}
 		}
 	}
 }

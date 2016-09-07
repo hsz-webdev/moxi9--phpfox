@@ -100,7 +100,7 @@ class Feed_Component_Block_Comment extends Phpfox_Component
 		}
 		$aFeed['can_post_comment'] = $bCanPostComment;
 		
-		if ( (int) $aFeed['total_like'] > 0 && Phpfox::isModule('like'))
+		if (isset($aFeed['total_like']) && (int) $aFeed['total_like'] > 0 && Phpfox::isModule('like'))
 		{
 			$aFeed['likes'] = Phpfox::getService('like')->getLikesForFeed($aFeed['like_type_id'], $aFeed['item_id'], ((int) $aFeed['feed_is_liked'] > 0 ? true : false), Phpfox::getParam('feed.total_likes_to_display'));
 		}
@@ -117,31 +117,37 @@ class Feed_Component_Block_Comment extends Phpfox_Component
 		{
 			$aFeed['bShowEnterCommentBlock'] = true;
 		}
-				
+
 		$iPageLimit = 2;
 		$mPager = null;
 		$iCommentId = null;
 		$bIsViewingComments = false;
 		if (Phpfox::isModule('comment') && $sFeedType != 'mini')
-		{	
+		{
 			if ((int) $aFeed['total_comment'] > 0)
-			{	
+			{
 				if ($sFeedType == 'view')
 				{
 					$iPageLimit = Phpfox::getParam('comment.comment_page_limit');
+					if ($this->request()->get('stream-mode')) {
+						$iPageLimit = ($iPageLimit + 1);
+						if (!defined('PHPFOX_FEED_STREAM_MODE')) {
+							define('PHPFOX_FEED_STREAM_MODE', true);
+						}
+					}
 					$mPager = $aFeed['total_comment'];
 				}
-				
+
 				if ($this->request()->getInt('comment'))
 				{
 					$iCommentId = $this->request()->getInt('comment');
 					$bIsViewingComments = true;
 				}
-							
-				$aFeed['comments'] = Phpfox::getService('comment')->getCommentsForFeed($aFeed['comment_type_id'], $aFeed['item_id'], $iPageLimit, $mPager, $iCommentId);
+
+				$aFeed['comments'] = Comment_Service_Comment::instance()->getCommentsForFeed($aFeed['comment_type_id'], $aFeed['item_id'], $iPageLimit, $mPager, $iCommentId);
 			}
 		}
-		
+
 		if ($sFeedType == 'view')
 		{
 			Phpfox_Pager::instance()->set(array(
@@ -173,7 +179,8 @@ class Feed_Component_Block_Comment extends Phpfox_Component
 		$this->template()->assign(array(
 				'aFeed' => $aFeed,
 				'sFeedType' => $sFeedType,
-				'bIsViewingComments' => $bIsViewingComments
+				'bIsViewingComments' => $bIsViewingComments,
+				'feedJson' => json_encode($aFeed)
 			)
 		);
 	}

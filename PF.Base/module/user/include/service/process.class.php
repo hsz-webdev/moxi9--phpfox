@@ -213,20 +213,6 @@ class User_Service_Process extends Phpfox_Service
 
 	public function add($aVals, $iUserGroupId = null)
 	{
-		if (!defined('PHPFOX_INSTALLER') && defined('PHPFOX_IS_HOSTED_SCRIPT'))
-		{
-			$iTotalMembersMax = (int) Phpfox::getParam('core.phpfox_grouply_members');
-			$iCurrentTotalMembers = $this->database()->select('COUNT(*)')
-				->from(Phpfox::getT('user'))
-				->where('view_id = 0')
-				->execute('getSlaveField');
-			
-			if ($iTotalMembersMax > 0 && $iCurrentTotalMembers >= $iTotalMembersMax)
-			{
-				Phpfox_Error::set('We are unable to setup an account for you at this time. This site has currently reached its limit on users.');	
-			}
-		}
-		
 		if (!defined('PHPFOX_INSTALLER') && Phpfox::getParam('user.split_full_name'))
 		{
 			if (empty($aVals['first_name']) || empty($aVals['last_name']))
@@ -390,10 +376,11 @@ class User_Service_Process extends Phpfox_Service
 			}
 		}
 
+		$password = (new Core\Hash())->make($aVals['password']);
 		$aInsert = array(
 			'user_group_id' => ($iUserGroupId === null ? NORMAL_USER_ID : $iUserGroupId),
 			'full_name' => $oParseInput->clean($aVals['full_name'], 255),
-			'password' => Phpfox::getLib('hash')->setHash($aVals['password'], $sSalt),
+			'password' => $password, //, Phpfox::getLib('hash')->setHash($aVals['password'], $sSalt),
 			'password_salt' => $sSalt,
 			'email' => $aVals['email'],
 			'joined' => PHPFOX_TIME,
@@ -406,7 +393,7 @@ class User_Service_Process extends Phpfox_Service
 			'last_ip_address' => Phpfox::getIp(),
 			'last_activity' => PHPFOX_TIME
 		);
-		
+
 		if (!defined('PHPFOX_INSTALLER') && Phpfox::getParam('user.invite_only_community') && !Phpfox::getService('invite')->isValidInvite($aVals['email']))
 		{
 			// the isValidInvite runs Phpfox_Error::set so we don't have to do it here
@@ -692,11 +679,13 @@ class User_Service_Process extends Phpfox_Service
 		{
 			return Phpfox_Error::set(Phpfox::getPhrase('user.not_a_valid_name'));
 		}
-				
+
+		/*
 		if (!$bIsAccount && Phpfox::getUserParam('user.can_edit_dob') && (empty($aVals['day']) || empty($aVals['month']) || empty($aVals['year'])))
 		{
 			return Phpfox_Error::set(Phpfox::getPhrase('user.please_enter_your_date_of_birth'));	
 		}
+		*/
 
 		if (isset($aVals['relation']) && Phpfox::getUserParam('custom.can_have_relationship') 
 			&& ($aVals['relation'] != $aVals['previous_relation_type'] || $aVals['relation_with'] != $aVals['previous_relation_with'])
@@ -713,9 +702,10 @@ class User_Service_Process extends Phpfox_Service
 		$oParseInput = Phpfox::getLib('parse.input');
 		$aInsert = array(			
 			'dst_check' => (isset($aVals['dst_check']) ? '1' : '0'),
-			'language_id' => $aVals['language_id']			
-		);		
-		
+			'language_id' => (isset($aVals['language_id']) ? $aVals['language_id'] : 0)
+		);
+
+		$bHasCountryChildren = false;
 		if (!$bIsAccount)
 		{
 			if (isset($aVals['country_iso']))
@@ -725,15 +715,18 @@ class User_Service_Process extends Phpfox_Service
 				$aCountryChildren = Phpfox::getService('core.country')->getChildren($aVals['country_iso']);
 				$bHasCountryChildren = !empty($aCountryChildren);
 			}
-			
-			//$aInsert['birthday'] = (Phpfox::getUserParam('user.can_edit_dob') && isset($aVals['day']) && isset($aVals['month']) && isset($aVals['year']) ? Phpfox::getService('user')->buildAge($aVals['day'], $aVals['month'], $aVals['year']) : null);
-			$aInsert['birthday_search'] = (Phpfox::getUserParam('user.can_edit_dob') && isset($aVals['day']) && isset($aVals['month']) && isset($aVals['year']) ? Phpfox::getLib('date')->mktime(0, 0, 0, $aVals['month'], $aVals['day'], $aVals['year']) : 0);
-			// http://www.phpfox.com/tracker/view/14726/
-			// if ($aInsert['birthday_search'] > 0)
-			if (isset($aInsert['birthday_search']))
-			{
-				$aInsert['birthday'] = date('mdY', $aInsert['birthday_search']);
+
+			if (isset($aVals['day']) && $aVals['day'] > 0) {
+				//$aInsert['birthday'] = (Phpfox::getUserParam('user.can_edit_dob') && isset($aVals['day']) && isset($aVals['month']) && isset($aVals['year']) ? Phpfox::getService('user')->buildAge($aVals['day'], $aVals['month'], $aVals['year']) : null);
+				$aInsert['birthday_search'] = (Phpfox::getUserParam('user.can_edit_dob') && isset($aVals['day']) && isset($aVals['month']) && isset($aVals['year']) ? Phpfox::getLib('date')->mktime(0, 0, 0, $aVals['month'], $aVals['day'], $aVals['year']) : 0);
+				// http://www.phpfox.com/tracker/view/14726/
+				// if ($aInsert['birthday_search'] > 0)
+				if (isset($aInsert['birthday_search']))
+				{
+					$aInsert['birthday'] = date('mdY', $aInsert['birthday_search']);
+				}
 			}
+
 			if (Phpfox::getUserParam('user.can_edit_gender_setting') && isset($aVals['gender']))
 			{
 				$aInsert['gender'] = (int) $aVals['gender'];
@@ -747,7 +740,10 @@ class User_Service_Process extends Phpfox_Service
 		
 		(($sPlugin = Phpfox_Plugin::get('user.service_process_update_start')) ? eval($sPlugin) : false);
 
-		if (isset($aSpecial['changes_allowed']) && $aSpecial['changes_allowed'] > $aSpecial['total_user_change'] && Phpfox::getUserParam('user.can_change_own_user_name') && !Phpfox::getParam('user.profile_use_id') && isset($aVals['old_user_name']) && $aVals['user_name'] != $aVals['old_user_name'])
+		if (
+			(isset($aSpecial['changes_allowed']) && $aSpecial['changes_allowed'] > $aSpecial['total_user_change'] && Phpfox::getUserParam('user.can_change_own_user_name') && !Phpfox::getParam('user.profile_use_id') && isset($aVals['old_user_name']) && $aVals['user_name'] != $aVals['old_user_name'])
+			|| \Core\Route\Controller::$isApi
+		)
 		{
 			// http://www.phpfox.com/tracker/view/15155/
 			$aVals['user_name'] = str_replace(' ', '-', $aVals['user_name']);
@@ -766,11 +762,11 @@ class User_Service_Process extends Phpfox_Service
 		}
 		
 		// updating the full name
-		if (isset($aSpecial['full_name_changes_allowed']) && 
+		if ((isset($aSpecial['full_name_changes_allowed']) &&
 				($aSpecial['full_name_changes_allowed'] > $aSpecial['total_full_name_change'] ||
 				$aSpecial['full_name_changes_allowed'] == 0) &&
 				Phpfox::getUserParam('user.can_change_own_full_name') &&
-				($aSpecial['current_full_name'] != $aVals['full_name'])
+				($aSpecial['current_full_name'] != $aVals['full_name'])) || \Core\Route\Controller::$isApi
 			)
 		{
 			if (Phpfox::getLib('parse.format')->isEmpty($aVals['full_name']))
@@ -789,12 +785,12 @@ class User_Service_Process extends Phpfox_Service
 			}				
 			
 			$aInsert['full_name'] = $oParseInput->clean($aVals['full_name'], 255);
-			if ($aSpecial['full_name_changes_allowed'] > 0)
+			if (isset($aSpecial['full_name_changes_allowed']) && $aSpecial['full_name_changes_allowed'] > 0)
 			{
 				$this->database()->updateCounter('user_field', 'total_full_name_change', 'user_id', $iUserId);
 			}
 		}
-		
+		// d($aInsert); exit;
 		$sFullName = Phpfox::getUserBy('full_name');
 		$this->database()->update($this->_sTable, $aInsert, 'user_id = ' . (int) $iUserId);
 		
@@ -1013,7 +1009,7 @@ class User_Service_Process extends Phpfox_Service
 				   
 			}
 		}
-		
+
 		if (true)
 		{			
 			if ($bForce)
@@ -1026,8 +1022,10 @@ class User_Service_Process extends Phpfox_Service
 					{
 						$oImage->createThumbnail(Phpfox::getParam('core.dir_user') . sprintf($sFileName, ''), Phpfox::getParam('core.dir_user') . sprintf($sFileName, '_' . $iSize), $iSize, $iSize);
 					}
+
 					$oImage->createThumbnail(Phpfox::getParam('core.dir_user') . sprintf($sFileName, ''), Phpfox::getParam('core.dir_user') . sprintf($sFileName, '_' . $iSize . '_square'), $iSize, $iSize, false);
-				
+
+					/*
 					if (defined('PHPFOX_IS_HOSTED_SCRIPT') || (Phpfox::getParam('core.allow_cdn') && !Phpfox::getParam('core.keep_files_in_server')))
 					{
 						if(file_exists(Phpfox::getParam('core.dir_user') . sprintf($sFileName, '_' . $iSize)))
@@ -1039,7 +1037,8 @@ class User_Service_Process extends Phpfox_Service
 							unlink(Phpfox::getParam('core.dir_user') . sprintf($sFileName, '_' . $iSize . '_square'));
 						}
 					}
-				}				
+					*/
+				}
 			
 				if (defined('PHPFOX_IS_HOSTED_SCRIPT'))
 				{
@@ -1105,26 +1104,28 @@ class User_Service_Process extends Phpfox_Service
 		}
 		
 		$sStatus = $this->preParse()->prepare($aVals['user_status']);
-		
-		$aUpdates = $this->database()->select('content')
-			->from(Phpfox::getT('user_status'))
-			->where('user_id = ' . (int) Phpfox::getUserId())
-			->limit(Phpfox::getParam('user.check_status_updates'))
-			->order('time_stamp DESC')
-			->execute('getSlaveRows');
-			
-		$iReplications = 0;
-		foreach ($aUpdates as $aUpdate)
-		{
-			if ($aUpdate['content'] == $sStatus)
+
+		if (!defined('PHPFOX_INSTALLER')) {
+			$aUpdates = $this->database()->select('content')
+				->from(Phpfox::getT('user_status'))
+				->where('user_id = ' . (int) Phpfox::getUserId())
+				->limit(Phpfox::getParam('user.check_status_updates'))
+				->order('time_stamp DESC')
+				->execute('getSlaveRows');
+
+			$iReplications = 0;
+			foreach ($aUpdates as $aUpdate)
 			{
-				$iReplications++;
+				if ($aUpdate['content'] == $sStatus)
+				{
+					$iReplications++;
+				}
 			}
-		}
-			
-		if ($iReplications > 0)
-		{
-			return Phpfox_Error::set(Phpfox::getPhrase('user.you_have_already_added_this_recently_try_adding_something_else'));			
+
+			if ($iReplications > 0)
+			{
+				return Phpfox_Error::set(Phpfox::getPhrase('user.you_have_already_added_this_recently_try_adding_something_else'));
+			}
 		}
 		
 		if (empty($aVals['privacy']))
@@ -1174,7 +1175,7 @@ class User_Service_Process extends Phpfox_Service
 
 		(($sPlugin = Phpfox_Plugin::get('user.service_process_add_updatestatus')) ? eval($sPlugin) : false);		
 		
-		$iReturnId = Phpfox::getService('feed.process')->add('user_status', $iStatusId, $aVals['privacy'], $aVals['privacy_comment'], 0, null, 0, (isset($aVals['parent_feed_id']) ? $aVals['parent_feed_id'] : 0), (isset($aVals['parent_module_id']) ? $aVals['parent_module_id'] : null));
+		$iReturnId = Feed_Service_Process::instance()->add('user_status', $iStatusId, $aVals['privacy'], $aVals['privacy_comment'], 0, null, 0, (isset($aVals['parent_feed_id']) ? $aVals['parent_feed_id'] : 0), (isset($aVals['parent_module_id']) ? $aVals['parent_module_id'] : null));
 		
 		(($sPlugin = Phpfox_Plugin::get('user.service_process_add_updatestatus_end')) ? eval($sPlugin) : false);
 		
@@ -1653,10 +1654,17 @@ class User_Service_Process extends Phpfox_Service
 		}
 		
 		$aUser = Phpfox::getService('user')->getUser(Phpfox::getUserId());
-		
-		if (Phpfox::getLib('hash')->setHash($aVals['old_password'], $aUser['password_salt']) != $aUser['password'])
-		{
-			return Phpfox_Error::set(Phpfox::getPhrase('user.your_current_password_does_not_match_your_old_password'));	
+
+		if (strlen($aUser['password']) > 32) {
+			$Hash = new Core\Hash();
+			if (!$Hash->check($aVals['old_password'], $aUser['password'])) {
+				return Phpfox_Error::set(Phpfox::getPhrase('user.your_current_password_does_not_match_your_old_password'));
+			}
+		}
+		else {
+			if (Phpfox::getLib('hash')->setHash($aVals['old_password'], $aUser['password_salt']) != $aUser['password']) {
+				return Phpfox_Error::set(Phpfox::getPhrase('user.your_current_password_does_not_match_your_old_password'));
+			}
 		}
 		
 		$sSalt = $this->_getSalt();

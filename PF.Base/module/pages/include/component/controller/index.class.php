@@ -194,6 +194,10 @@ class Pages_Component_Controller_Index extends Phpfox_Component
 		$aPages = [];
 		$aCategories = [];
 		$bShowCategories = false;
+		if ($this->search()->isSearch()) {
+			$bIsValidCategory = true;
+		}
+
 		if ($bIsValidCategory) {
 			$this->search()->browse()->params($aBrowseParams)->execute();
 			$aPages = $this->search()->browse()->getRows();
@@ -214,7 +218,7 @@ class Pages_Component_Controller_Index extends Phpfox_Component
 		}
 		else {
 			$bShowCategories = true;
-			$aCategories = Phpfox::getService('pages.category')->getForBrowse(0, true);
+			$aCategories = Phpfox::getService('pages.category')->getForBrowse(0, true, ($bIsProfile ? $aUser['user_id'] : null));
 		}
 
 		$this->template()->setHeader('cache', array(

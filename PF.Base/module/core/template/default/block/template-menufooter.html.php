@@ -17,5 +17,10 @@ defined('PHPFOX') or exit('NO DICE!');
 	{/foreach}
 </ul>
 <div class="copyright">
-	{param var='core.site_copyright'}
+	<span>{param var='core.site_copyright'}</span>
+	{if Phpfox::isTrial()}
+	<div class="branding">
+		{branding}
+	</div>
+	{/if}
 </div>

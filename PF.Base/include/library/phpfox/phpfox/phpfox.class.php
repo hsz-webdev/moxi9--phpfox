@@ -27,7 +27,7 @@ class Phpfox
 	/**
  	* Product Version : major.minor.maintenance [alphaX, betaX or rcX]
  	*/
-	const VERSION = '4.0.0rc1';
+	const VERSION = '4.0.8';
 	
 	/**
 	 * Product Code Name
@@ -106,8 +106,13 @@ class Phpfox
 		{
 			return self::VERSION;
 		}
-		
-		return Phpfox::getParam('core.phpfox_version');
+
+		return self::VERSION;
+	}
+
+	public static function isTrial()
+	{
+		return (defined('PHPFOX_TRIAL') ? true : false);
 	}
 	
 	/**
@@ -153,6 +158,9 @@ class Phpfox
 	public static function internalVersion() {
 		$version = self::getCleanVersion();
 		$version .= Phpfox::getParam('core.css_edit_id');
+		if (defined('PHPFOX_NO_CSS_CACHE')) {
+			return Phpfox::getTime();
+		}
 
 		return $version;
 	}
@@ -203,7 +211,7 @@ class Phpfox
 			return '';
 		}
 		
-		return 'Powered By ' . ($bLink ? '<a href="http://www.phpfox.com/">' : '') . 'PHPFox' . ($bLink ? '</a>' : '') . ($bVersion ? ' Version ' . PhpFox::getVersion() : '');
+		return '' . ($bLink ? '<a href="http://www.phpfox.com/">' : '') . 'Powered By PHPFox' . ($bVersion ? ' Version ' . PhpFox::getVersion() : '') . ($bLink ? '</a>' : '');
 	}
 	
 	/**
@@ -257,6 +265,14 @@ class Phpfox
 	 */
 	public static function getParam($sVar)
 	{
+		if ($sVar == 'core.wysiwyg') {
+			return 'default';
+		}
+
+		if ($sVar == 'core.cache_plugins' && PHPFOX_DEBUG) {
+			return false;
+		}
+
 		return Phpfox::getLib('setting')->getParam($sVar);
 	}
 	
@@ -361,7 +377,36 @@ class Phpfox
 	 * @return object
 	 */
 	public static function getBlock($sClass, $aParams = array(), $bTemplateParams = false)
-	{		
+	{
+		if (is_array($sClass)) {
+			if (isset($sClass['callback'])) {
+				$content = call_user_func($sClass['callback'], $sClass['object']);
+			}
+			else {
+				$content = $sClass[0];
+			}
+
+			if (empty($content)) {
+				$obj = $sClass['object'];
+				if ($obj instanceof \Core\Block) {
+					if (empty($html)) {
+						$content = '
+						<div class="block">
+							' . ($obj->get('title') ? '<div class="title">' . $obj->get('title') . '</div>' : '') . '
+							<div class="content">
+								' . $obj->get('content') . '
+							</div>
+						</div>
+						';
+					}
+				}
+			}
+
+			echo $content;
+
+			return null;
+		}
+
 		return Phpfox_Module::instance()->getComponent($sClass, $aParams, 'block', $bTemplateParams);
 	}	
 	
@@ -601,7 +646,7 @@ class Phpfox
 			return $aValues[$sHash];
 		}
 		
-		$aFields = Phpfox::getService('user')->getUserFields();
+		$aFields = User_Service_User::instance()->getUserFields();
 		
 		$aValues[$sHash] = '';
 		foreach ($aFields as $sField)
@@ -1036,11 +1081,12 @@ class Phpfox
 	public static function getMasterFiles()
 	{
 		$aOut = array(
-			'<link href="' . Phpfox::getParam('core.url_static') . 'css/font-awesome.min.css" rel="stylesheet">',
+			'<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css?v=' . Phpfox_Template::instance()->getStaticVersion() . '" rel="stylesheet">',
 			'layout.css' => 'style_css',
 			'common.css' => 'style_css',
 			'thickbox.css' => 'style_css',
 			'jquery.css' => 'style_css',
+			'comment.css' => 'style_css',
 			'pager.css' => 'style_css',
 			'jquery/jquery.js' => 'static_script',
 			'jquery/ui.js' => 'static_script',
@@ -1069,6 +1115,9 @@ class Phpfox
 				$Home = new Core\Home(PHPFOX_LICENSE_ID, PHPFOX_LICENSE_KEY);
 				$callback = $_REQUEST['m9callback'];
 				unset($_GET['m9callback'], $_GET['do']);
+				if (!$_GET) {
+					$_GET = [];
+				}
 				echo json_encode(call_user_func([$Home, $callback], $_GET));
 			} catch (\Exception $e) {
 				// throw new \Exception($e->getMessage(), 0, $e);
@@ -1077,34 +1126,24 @@ class Phpfox
 			exit;
 		}
 
-		if (isset($_REQUEST['m9action'])) {
-			if ((empty($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_PW'])) && !isset($_GET['token'])) {
-				exit;
-			}
-
-			$response = null;
-			if (isset($_GET['token'])) {
-				$Home = new Core\Home(PHPFOX_LICENSE_ID, PHPFOX_LICENSE_KEY);
-				$response = $Home->install([
-					'type' => $_GET['type'],
-					'token' => $_GET['token']
-				]);
-
-				$_SERVER['PHP_AUTH_USER'] = PHPFOX_LICENSE_ID;
-				$_SERVER['PHP_AUTH_PW'] = PHPFOX_LICENSE_KEY;
-			}
-
-			$Home = new Core\Home($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
-			$Home->run($_REQUEST['m9action'], $response);
-		}
-
 		$oTpl = Phpfox_Template::instance();
 		$aLocale = Phpfox_Locale::instance()->getLang();
 		$oReq = Phpfox_Request::instance();
 		$oModule = Phpfox_Module::instance();
 
-		$aStaticFolders = ['file', 'static', 'theme', 'module', 'apps', 'themes'];
-		if (in_array($oReq->segment(1), $aStaticFolders)) {
+		if ($oReq->segment(1) == 'favicon.ico') {
+			header('Content-type: image/x-icon');
+			echo file_get_contents('http://www.phpfox.com/favicon.ico');
+			exit;
+		}
+
+		$aStaticFolders = ['file', 'static', 'module', 'apps', 'Apps', 'themes'];
+		if (in_array($oReq->segment(1), $aStaticFolders) ||
+			(
+				$oReq->segment(1) == 'theme' && $oReq->segment(2) != 'demo'
+				&& $oReq->segment(1) == 'theme' && $oReq->segment(2) != 'sample'
+			)
+		) {
 			$sUri = Phpfox_Url::instance()->getUri();
 			if ($sUri == '/static/ajax.php') {
 				$oAjax = Phpfox_Ajax::instance();
@@ -1113,14 +1152,23 @@ class Phpfox
 				exit;
 			}
 
+			if (Phpfox::getParam('core.url_rewrite') == '1') {
+				header("HTTP/1.0 404 Not Found");
+				header('Content-type: application/json');
+				echo json_encode([
+					'error' => 404
+				]);
+				exit;
+			}
+
 			$HTTPCache = new Core\HTTP\Cache();
 			$HTTPCache->checkCache();
 
 			$sDir = PHPFOX_DIR;
-			if ($oReq->segment(1) == 'apps' || $oReq->segment(1) == 'themes') {
+			if ($oReq->segment(1) == 'Apps' || $oReq->segment(1) == 'apps' || $oReq->segment(1) == 'themes') {
 				$sDir = PHPFOX_DIR_SITE;
 			}
-			$sPath = $sDir . $sUri;
+			$sPath = $sDir . ltrim($sUri, '/');
 
 			if ($oReq->segment(1) == 'themes' && $oReq->segment(2) == 'default') {
 				$sPath = PHPFOX_DIR . str_replace('themes/default', 'theme/default', $sUri);
@@ -1131,14 +1179,19 @@ class Phpfox
 			}
 
 			$sType = Phpfox_File::instance()->mime($sUri);
+			$sExt = Phpfox_File::instance()->extension($sUri);
+
 			if (!file_exists($sPath)) {
+				$sPath = str_replace('PF.Base', 'PF.Base/..', $sPath);
 				// header('Content-type: ' . $sType);
-				header("HTTP/1.0 404 Not Found");
-				header('Content-type: application/json');
-				echo json_encode([
-					'error' => 404
-				]);
-				exit;
+				if (!file_exists($sPath)) {
+					header("HTTP/1.0 404 Not Found");
+					header('Content-type: application/json');
+					echo json_encode([
+						'error' => 404
+					]);
+					exit;
+				}
 			}
 
 			// header('Content-type: ' . $sType);
@@ -1184,7 +1237,7 @@ class Phpfox
 				$View = new Core\View();
 			}
 		}
-	
+
 		if (!PHPFOX_IS_AJAX_PAGE)
 		{
 				$oTpl->setImage(array(
@@ -1236,8 +1289,7 @@ class Phpfox
 					$oTpl->setHeader('<script type="text/javascript" src="' . $sUrl . '"></script>');
 				}
 		}
-			
-		
+
 		if ($sPlugin = Phpfox_Plugin::get('get_controller'))
 		{
 			eval($sPlugin);
@@ -1248,7 +1300,7 @@ class Phpfox
 		]);
 
 		$oModule->getController();
-		
+
 		Phpfox::getService('admincp.seo')->setHeaders();
 		
 		if (!defined('PHPFOX_DONT_SAVE_PAGE'))
@@ -1260,7 +1312,7 @@ class Phpfox
 		{			
 			Phpfox::getService('log.session')->verifyToken();	
 		}
-		
+
 		(($sPlugin = Phpfox_Plugin::get('run')) ? eval($sPlugin) : false);
 	
 		if (!self::isAdminPanel())
@@ -1372,15 +1424,29 @@ class Phpfox
 		if ((!PHPFOX_IS_AJAX_PAGE && $oTpl->sDisplayLayout && !isset($View))
 			|| (!PHPFOX_IS_AJAX_PAGE && self::isAdminPanel())
 		)
-		{			
+		{
 			$oTpl->getLayout($oTpl->sDisplayLayout);
 		}
 
 		if (PHPFOX_IS_AJAX_PAGE) {
-			header('Content-type: application/json');
+			header('Content-type: application/json; charset=utf-8');
 
-			Phpfox_Module::instance()->getControllerTemplate();
-			$content = ob_get_contents(); ob_clean();
+			/*
+			if (isset($View) && $View instanceof \Core\View) {
+				$content = $View->getContent();
+			}
+			else {
+				Phpfox_Module::instance()->getControllerTemplate();
+				$content = ob_get_contents(); ob_clean();
+			}
+			*/
+			if ($View instanceof \Core\View){
+				$content = $View->getContent();
+			}
+			else {
+				Phpfox_Module::instance()->getControllerTemplate();
+				$content = ob_get_contents(); ob_clean();
+			}
 
 			$oTpl->getLayout('breadcrumb');
 			$breadcrumb = ob_get_contents(); ob_clean();
@@ -1419,6 +1485,9 @@ class Phpfox
 
 			$blocks = [];
 			foreach (range(1, 12) as $location) {
+				if ($location == 3) {
+					echo \Phpfox_Template::instance()->getSubMenu();
+				}
 				$aBlocks = Phpfox_Module::instance()->getModuleBlocks($location);
 				$blocks[$location] = [];
 				foreach ($aBlocks as $sBlock) {
@@ -1444,7 +1513,7 @@ class Phpfox
 
 			$controller = Phpfox_Module::instance()->getFullControllerName();
 			$data = json_encode([
-				'content' => $content,
+				'content' => str_replace(['&#039;'], ["'"], Phpfox_Parse_Input::instance()->convert($content)),
 				'title' => html_entity_decode($oTpl->instance()->getTitle()),
 				'phrases' => Phpfox_Template::instance()->getPhrases(),
 				'files' => $aLoadFiles,
@@ -1488,6 +1557,16 @@ class Phpfox
 	public static function getPhrase($sParam, $aParams = array(), $bNoDebug = false, $sDefault = null, $sLang = '')
 	{
 		return Phpfox_Locale::instance()->getPhrase($sParam, $aParams, $bNoDebug, $sDefault, $sLang);
+	}
+
+  /**
+	 * @see Phpfox_Local::isPhrase()
+	 * @param string $sParam
+	 * @return bool
+	 */
+	public static function isPhrase($sParam)
+	{
+		return Phpfox_Locale::instance()->isPhrase($sParam);
 	}
 	
 	/**

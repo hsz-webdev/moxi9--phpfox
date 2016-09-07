@@ -23,7 +23,15 @@ class Cache {
 		return $this->_cache->remove($this->_cache->set($key));
 	}
 
-	public function get($key) {
-		return $this->_cache->get($this->_cache->set($key));
+	public function get($key, $minutes = 0) {
+		return $this->_cache->get($this->_cache->set($key), $minutes);
+	}
+
+	public function purge() {
+		return $this->_cache->remove();
+	}
+
+	public function __call($method, $args) {
+		return call_user_func_array([$this->_cache, $method], $args);
 	}
 }

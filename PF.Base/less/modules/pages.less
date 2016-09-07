@@ -66,6 +66,7 @@
 	}
 }
 
+/*
 #page_pages_index {
 	#container > ._block_h1 > h1 {
 		width:auto;
@@ -73,7 +74,7 @@
 	}
 
 	#left, #right {
-		display:none;
+		//display:none;
 	}
 
 	#content {
@@ -81,6 +82,7 @@
 		margin-left:0px;
 	}
 }
+*/
 
 /*
 #js_is_user_profile h2 {
@@ -108,14 +110,14 @@
 	}
 }
 
-.pages_like_join, .pages_like_join:hover {
+.pages_like_join, .pages_like_join:hover, .js_claim_page, .js_claim_page:hover {
 	.button();
 
 	color:@brandPrimaryColor;
 	display:inline-block;
 }
 
-.pages_like_join:hover {
+.pages_like_join:hover, .js_claim_page:hover {
 	.button_hover();
 }
 
@@ -135,6 +137,7 @@
 	top:0px;
 	right:0px;
 	left:0px;
+	min-height:100px;
 
 	/*
 	.pages_like_join {
@@ -181,13 +184,18 @@
 	}
 
 	.pages_header_image {
+		min-width:100px;
+		min-height:100px;
+		background:#fff;
+
 		img {
 			max-width:100px;
 			max-height:100px;
+			background-size:cover;
 		}
 	}
 }
-
+/*
 .pages_header_fixed {
 	.pages_header_info {
 		position:fixed;
@@ -198,10 +206,10 @@
 		margin-left:-((@pagesWidth - (@navWidth))/2);
 	}
 }
-
+*/
 .pages_menu {
 	position:absolute;
-	right:10px;
+	right:20px;
 	bottom:15px;
 	z-index:10;
 
@@ -235,7 +243,7 @@
 	display:none;
 }
 
-#page_pages_view {
+#page_pages_view, ._is_pages_view {
 	.pages_header_cover {
 		display:block;
 	}
@@ -278,9 +286,10 @@
 ._is_pages_view {
 	.breadcrumbs_menu {
 		position:absolute;
-		right:10px;
-		top:10px;
+		right:20px;
+		top:20px;
 		z-index:200;
+		bottom:auto;
 	}
 
 	div.header_bar_menu {
@@ -288,8 +297,21 @@
 		margin:auto;
 	}
 
+	#activity_feed_share_this_one ul li div.parent {
+		.reset();
+	}
+
+	#activity_feed_share_this_one ul li div.parent select {
+		width:100%;
+		background:darken(@blockBg, 8%);
+		padding:10px;
+		font-size:@fontSizeBase - 2;
+	}
+
 	#activity_feed_share_this_one {
-		display:none;
+		/*display:none;*/
+		position:static;
+		margin-bottom:-10px;
 	}
 
 	#header {
@@ -302,9 +324,11 @@
 	}
 
 	.item_bar {
-		top:10px;
+		display:block;
+		top:auto;
+		bottom:-50px;
 		right:10px;
-		box-shadow:@blockBoxShadowLight;
+		left:auto;
 		z-index:100;
 	}
 }
@@ -382,4 +406,8 @@ ul.activity_feed_form_attach li {
 .pages_edit_widget li.widget {
 	position:relative;
 	padding-left:0px;
+}
+
+.nav_pages a, .nav_pages a:hover {
+	vertical-align:top;
 }

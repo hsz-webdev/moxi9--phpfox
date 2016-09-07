@@ -15,24 +15,22 @@
 	{section_menu_js}
 </div>
 
-{if $sPublicMessage && !is_bool($sPublicMessage)}
-<div class="block">
-	<div class="content">
-		<div class="public_message" id="public_message">
-			{$sPublicMessage}
-		</div>
-	</div>
-	<script type="text/javascript">
-		$Behavior.template_error = function()
-		{l}
-		$('#public_message').show();
-		{r};
-	</script>
+{if isset($sPublicMessage) && $sPublicMessage && !is_bool($sPublicMessage)}
+<div class="public_message" id="public_message">
+	{$sPublicMessage}
 </div>
+<script type="text/javascript">
+	$Behavior.template_error = function()
+	{l}
+	$('#public_message').show();
+	{r};
+</script>
+{else}
+<div class="public_message" id="public_message"></div>
 {/if}
 <div id="pem"><a href="#"></a></div>
 <div id="core_js_messages">
-	{if count($aErrors)}
+	{if isset($aErrors) && count($aErrors)}
 	{foreach from=$aErrors item=sErrorMessage}
 	<div class="error_message">{$sErrorMessage}</div>
 	{/foreach}

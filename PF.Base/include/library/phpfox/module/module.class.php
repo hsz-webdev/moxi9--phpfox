@@ -180,6 +180,10 @@ class Phpfox_Module
 	private $_oBlocklet;
 
 	private $_sControllerTemplateClass;
+
+	private $_class = '';
+
+	public $blocks = [];
 	
 	/**
 	 * Class constructor that caches all the modules, components (blocks/controllers) and drag/drop information.
@@ -201,7 +205,7 @@ class Phpfox_Module
 			{
 				$this->_cacheModules();	
 			}
-		}		
+		}
 	}
 
 	/**
@@ -213,6 +217,21 @@ class Phpfox_Module
 
 	public function all() {
 		return $this->_aModules;
+	}
+
+	public function block($controller, $location, $html, \Core\Block $object = null) {
+		if ($object !== null) {
+			$cache = $html;
+			$html = [
+				'callback' => $cache,
+				'object' => $object
+			];
+
+			$this->blocks[$controller][$location][] = $html;
+		}
+		else {
+			$this->blocks[$controller][$location][] = [$html];
+		}
 	}
 
 	public function get($sModule) {
@@ -232,6 +251,8 @@ class Phpfox_Module
 	 */
 	public function loadBlocks()
 	{
+		Core\Event::trigger('lib_module_get_blocks', $this);
+
 		$this->_cacheModuleBlocks();	
 	}
 	
@@ -242,7 +263,11 @@ class Phpfox_Module
 	 * @return bool TRUE if it exists, FALSE if it does not.
 	 */
 	public function isModule($sModule)
-	{			
+	{
+		if (in_array($sModule, ['input'])) {
+			return false;
+		}
+
 		$sModule = strtolower($sModule);
 		if (isset($this->_aModules[$sModule]))
 		{
@@ -298,7 +323,7 @@ class Phpfox_Module
 		if (($View = (new Core\Route\Controller())->get())) {
 			return $View;
 		}
-		
+
 		(($sPlugin = Phpfox_Plugin::get('module_setcontroller_start')) ? eval($sPlugin) : false);
 
 		$oReq = Phpfox_Request::instance();
@@ -441,7 +466,9 @@ class Phpfox_Module
 		if (Phpfox::getParam('core.site_is_offline')
 			&& !Phpfox::getUserParam('core.can_view_site_offline')
 			&& (
-				$this->_sModule != 'user' && !in_array($this->_sController, ['login', 'logout'])
+				$this->_sModule != 'user'
+				&& $this->_sModule != 'captcha'
+				&& !in_array($this->_sController, ['login', 'logout'])
 			)
 		) {
 			$this->_sModule = 'core';
@@ -450,19 +477,47 @@ class Phpfox_Module
 		}
 	}
 
+	public function appendPageClass($class) {
+		$this->_class .= ' '. $class . ' ';
+	}
+
 	public function getPageClass() {
 		$class = '';
 		if (defined('PHPFOX_IS_PAGES_VIEW')) {
 			$class .= ' _is_pages_view ';
 		}
+		if (defined('PHPFOX_IS_USER_PROFILE')) {
+			$class .= ' _is_profile_view ';
+		}
+		if (!Phpfox::isUser()) {
+			$class .= ' _is_guest_user ';
+		}
 
-		return $class;
+		$class .= $this->_class;
+
+		$object = new stdClass();
+		$object->cssClass = $class;
+		Core\Event::trigger('lib_module_page_class', $object);
+
+		return $object->cssClass;
 	}
 
 	public function getPageId() {
-		$id = str_replace(['/', '.'], '_', $this->getFullControllerName());
+		$id = $this->getFullControllerName();
+		if (Core\Route\Controller::$name) {
+			$route = Core\Route\Controller::$name;
+			if (isset($route['route'])) {
+				$id = 'route_' . $route['route'];
+			}
+		}
 
-		return $id;
+		$id = str_replace(['/', '.'], '_', $id);
+
+		$object = new stdClass();
+		$object->id = $id;
+		Core\Event::trigger('lib_module_page_id', $object);
+
+		return $object->id;
 	}
 	
 	/**
@@ -561,9 +616,12 @@ class Phpfox_Module
 	
 		$aBlocks[$iId] = array();
 
-
 		if (defined('PHPFOX_IS_USER_PROFILE') && $iId == 11) {
 			$aBlocks[$iId][] = 'profile.pic';
+		}
+
+		if (defined('PHPFOX_IS_USER_PROFILE_INDEX') && $iId == 1) {
+			$aBlocks[$iId][] = 'custom.panel';
 		}
 
 		if (defined('PHPFOX_IS_PAGES_VIEW') && $iId == 11) {
@@ -571,6 +629,7 @@ class Phpfox_Module
 		}
 
 		(($sPlugin = Phpfox_Plugin::get('get_module_blocks')) ? eval($sPlugin) : false);
+
 
 		/*
 		if (is_object($this->_oBlocklet) && method_exists($this->_oBlocklet, 'location_' . $iId)) {
@@ -580,6 +639,13 @@ class Phpfox_Module
 
 		//$sController = strtolower($this->_sModule . '.' . $this->_sController);
 		$sController = strtolower($this->_sModule . '.' . str_replace(array('\\', '/'), '.' , $this->_sController));
+		if (\Core\Route\Controller::$name) {
+			$sController = 'route_' . \Core\Route\Controller::$name['route'];
+			$sController = str_replace('/', '_', $sController);
+		}
+
+		// $this->blocks = $this->_aModuleBlocks;
+		// $this->_aModuleBlocks = $this->blocks;
 
 		if (isset($this->_aModuleBlocks[$sController][$iId]) || isset($this->_aModuleBlocks[str_replace('.index','',$sController)][$iId]) || isset($this->_aModuleBlocks[$this->_sModule][$iId]) || isset($this->_aModuleBlocks[''][$iId]))
 		{
@@ -608,7 +674,7 @@ class Phpfox_Module
 				}				
 			}	
 			
-			if (isset($this->_aModuleBlocks[''][$iId]))
+			if (isset($this->_aModuleBlocks[''][$iId]) && !Phpfox::isAdminPanel())
 			{
 				foreach ($this->_aModuleBlocks[''][$iId] as $mKey => $mData)
 				{
@@ -667,9 +733,36 @@ class Phpfox_Module
 			$aBlocks[$iId] = true;
 		}
 
-		if ($iId == '3') {
+		if ($iId == '3' && !Phpfox::isAdminPanel()) {
 			// \Phpfox::getBlock('ad.display', array('block_id' => 3));
 			$aBlocks[$iId][] = 'ad.display';
+		}
+
+		/*
+		if (isset($this->blocks[$sController]) && isset($this->blocks[$sController][$iId])) {
+			$aBlocks[$iId] = array_merge($aBlocks[$iId], (array) $this->blocks[$sController][$iId]);
+			d($this->blocks[$sController][$iId]); exit;
+		}
+		*/
+
+		if (isset($this->blocks['*']) && isset($this->blocks['*'][$iId])) {
+			$content = $this->blocks['*'][$iId];
+			/*
+			if (isset($content['callback'])) {
+				$content = call_user_func($content['callback'], $content['object']);
+			}
+			*/
+			$aBlocks[$iId] = array_merge($aBlocks[$iId], (array) $content);
+		}
+
+		if (isset($this->blocks[$sController]) && isset($this->blocks[$sController][$iId])) {
+			$content = $this->blocks[$sController][$iId];
+			/*
+			if (isset($content['callback'])) {
+				$content = call_user_func($content['callback'], $content['object']);
+			}
+			*/
+			$aBlocks[$iId] = array_merge($aBlocks[$iId], (array) $content);
 		}
 					
 		return $aBlocks[$iId];

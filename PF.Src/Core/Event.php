@@ -5,9 +5,17 @@ namespace Core;
 class Event {
 	private static $_events = null;
 
-	public function __construct($events) {
-		if (!is_array($events)) {
+	public function __construct($events, $callback = null) {
 
+		if (is_array($events) && is_callable($callback)) {
+			foreach ($events as $name) {
+				new self($name, $callback);
+			}
+			return;
+		}
+
+		if (!is_array($events)) {
+			$events = [$events => $callback];
 		}
 
 		foreach ($events as $name => $callback) {

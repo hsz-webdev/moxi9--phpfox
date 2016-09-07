@@ -121,14 +121,14 @@ class Friend_Component_Ajax_Ajax extends Phpfox_Ajax
 		{
 			if (Phpfox::getService('friend.process')->add(Phpfox::getUserId(), $this->get('user_id'), (isset($aVal['list_id']) ? (int) $aVal['list_id'] : 0)))
 			{
-				$this->html('#drop_down_' . $this->get('request_id'), Phpfox::getPhrase('friend.confirmed'));
+				$this->hide('#drop_down_' . $this->get('request_id'));
 			}
 		}
 		else 
 		{
 			if (Phpfox::getService('friend.process')->deny(Phpfox::getUserId(), $this->get('user_id')))
 			{
-				$this->html('#drop_down_' . $this->get('request_id'), Phpfox::getPhrase('friend.denied'));
+				$this->hide('#drop_down_' . $this->get('request_id'));
 			}			
 		}
 		
@@ -278,6 +278,7 @@ class Friend_Component_Ajax_Ajax extends Phpfox_Ajax
 	public function buildCache()
 	{
 		$this->call('$Cache.friends = ' . json_encode(Friend_Service_Friend::instance()->getFromCache($this->get('allow_custom'))) . ';');
+		$this->call('$Core.loadInit();');
 	}
 	
 	public function getLiveSearch()
@@ -298,7 +299,10 @@ class Friend_Component_Ajax_Ajax extends Phpfox_Ajax
 		foreach ($aUsers as $aUser)
 		{
 			$iFound++;
-			$sHtml .= '<li><a rel="' . $aUser['user_id'] . '" class="js_friend_search_link ' . (($iFound == 1) ? 'js_temp_friend_search_form_holder_focus' : '') . '" href="#" onclick="return $Core.searchFriendsInput.processClick(this, \'' . $aUser['user_id'] . '\');"><img src="' . $aUser['user_image'] . '" alt="" style="width:25px; height:25px;" />' . $aUser['full_name'] . '<div class="clear"></div></a></li>';			
+			if (substr($aUser['user_image'], 0, 5) == 'http:') {
+				$aUser['user_image'] = '<img src="' . $aUser['user_image'] . '">';
+			}
+			$sHtml .= '<li><div rel="' . $aUser['user_id'] . '" class="js_friend_search_link ' . (($iFound == 1) ? 'js_temp_friend_search_form_holder_focus' : '') . '" href="#" onclick="return $Core.searchFriendsInput.processClick(this, \'' . $aUser['user_id'] . '\');"><span class="image">' . $aUser['user_image'] . '</span><span class="user">' . $aUser['full_name'] . '</span></div></li>';
 			$sStoreUser .= '$Core.searchFriendsInput.storeUser('.$aUser['user_id'].', JSON.parse('. json_encode(json_encode($aUser)) .'));';
 			
 			if ($iFound > $this->get('total_search'))
@@ -307,7 +311,7 @@ class Friend_Component_Ajax_Ajax extends Phpfox_Ajax
 			}
 		}
 		// find('.js_temp_friend_search_form')
-		$sHtml = '<div class="js_temp_friend_search_form_holder" style="width:' . $this->get('width') . ';"><ul>' . $sHtml . '</ul></div>';
+		$sHtml = '<div class="js_temp_friend_search_form_holder"><ul>' . $sHtml . '</ul></div>';
 		$this->call($sStoreUser);
 		$this->call('$("#'.$this->get('parent_id') . '").parent().find(".js_temp_friend_search_form").html(\''. str_replace("'", "\\'",$sHtml) .'\').show();');
 	}

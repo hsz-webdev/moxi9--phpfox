@@ -22,7 +22,7 @@ class User_Component_Block_Register extends Phpfox_Component
 	{
 		if (!Phpfox::getParam('user.allow_user_registration'))
 		{
-			//return false;
+			return false;
 		}
 		
 		if (Phpfox::isUser())
@@ -31,7 +31,7 @@ class User_Component_Block_Register extends Phpfox_Component
 		}
 		
 		$this->template()->assign(array(
-				'sHeader' => 'Sign Up',
+				'sHeader' => Phpfox::getPhrase('user.sign_up'),
 				'sSiteUrl' => Phpfox::getParam('core.path'),
 				'aTimeZones' => Phpfox::getService('core')->getTimeZones(),
 				'aPackages' => (Phpfox::isModule('subscribe') ? Phpfox::getService('subscribe')->getPackages(true) : null),

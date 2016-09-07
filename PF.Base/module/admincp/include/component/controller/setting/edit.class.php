@@ -24,6 +24,14 @@ class Admincp_Component_Controller_Setting_Edit extends Phpfox_Component
 		$aCond = array();
 		$aUrl = array();
 		$sSettingTitle = '';
+
+		if ($this->request()->get('setting-id')) {
+			$this->url()->send('admincp');
+		}
+
+		if (!$this->request()->get('module-id') && !$this->request()->get('group-id')) {
+			$this->url()->send('admincp');
+		}
 		
 		if (($sSettingId = $this->request()->get('setting-id')))
 		{
@@ -73,7 +81,7 @@ class Admincp_Component_Controller_Setting_Edit extends Phpfox_Component
 			}
 		}
 		
-		$aSettings = Phpfox::getService('admincp.setting')->get($aCond);
+		$aSettings = Admincp_Service_Setting_Setting::instance()->get($aCond);
 		
 		if ($aVals = $this->request()->getArray('val'))
 		{

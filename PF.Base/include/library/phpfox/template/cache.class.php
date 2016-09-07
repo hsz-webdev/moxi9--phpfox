@@ -684,13 +684,7 @@ class Phpfox_Template_Cache extends Phpfox_Template
 			case 'branding':
 				$sContent = '
 				<?php if (!Phpfox::getParam(\'core.branding\')): ?>
-						<?php echo PhpFox::link(); ?>
-						<div>
-							phpFox &copy; <?php echo date(\'Y\', PHPFOX_TIME); ?>
-							<?php if (Phpfox::getParam(\'core.site_copyright\') != \'\'): ?><br /><?php echo Phpfox::getParam(\'core.site_copyright\'); ?><?php endif; ?>
-						</div>
-				<?php else: ?>
-				<?php echo Phpfox::getParam(\'core.site_copyright\'); ?>
+					<?php echo PhpFox::link(true, false); ?>
 				<?php endif; ?>
 				';
 				return $sContent;
@@ -1143,7 +1137,7 @@ class Phpfox_Template_Cache extends Phpfox_Template
 				$sYear .= '<?php endforeach; ?>';
 				$sYear .= "\t\t" . '</select>' . "\n";
 
-				$aSep = $this->_removeQuote($aArgs['field_separator']);
+				$aSep = '<span class="field_separator">' . $this->_removeQuote($aArgs['field_separator']) . '</span>';
 
 				$sReturn = '';
 				switch (Phpfox::getParam('core.date_field_order'))

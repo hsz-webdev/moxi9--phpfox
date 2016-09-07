@@ -19,9 +19,8 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 	 * Controller
 	 */
 	public function process()
-	{	
-		
-		$aParentModule = $this->getParam('aParentModule');	
+	{
+		$aParentModule = $this->getParam('aParentModule');
 		
 		if ($aParentModule === null && $this->request()->getInt('req2') > 0)
 		{
@@ -122,7 +121,7 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 						'action' => ($bIsProfile === true ? $this->url()->makeUrl($aUser['user_name'], array('blog', 'view' => $this->request()->get('view'))) : $this->url()->makeUrl('blog', array('view' => $this->request()->get('view')))),
 						'default_value' => Phpfox::getPhrase('blog.search_blogs_dot'),
 						'name' => 'search',
-						'field' => array('blog.title', 'blog_text.text')
+						'field' => array('blog.title')
 					),
 					'sort' => array(
 						'latest' => array('blog.time_stamp', Phpfox::getPhrase('blog.latest')),
@@ -247,7 +246,7 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 				$this->search()->setCondition('AND blog.module_id = \'blog\'');
 			}
 		}
-		
+
 		// http://www.phpfox.com/tracker/view/15375/
 		if (((defined('PHPFOX_IS_PAGES_VIEW') && Phpfox::getService('pages')->hasPerm(null, 'blog.view_browse_blogs'))
 			|| (!defined('PHPFOX_IS_PAGES_VIEW') && $aParentModule['module_id'] == 'pages' && Phpfox::getService('pages')->hasPerm($aParentModule['item_id'], 'blog.view_browse_blogs')))
@@ -288,14 +287,14 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 			);
 		}
 		// END
-		
+
 		$this->search()->browse()->params($aBrowseParams)->execute();
 		
 		$aItems = $this->search()->browse()->getRows();
-		
+
 		Phpfox_Pager::instance()->set(array('page' => $this->search()->getPage(), 'size' => $this->search()->getDisplay(), 'count' => $this->search()->browse()->getCount()));
-		
-		Phpfox::getService('blog')->getExtra($aItems, 'user_profile');
+
+		Blog_Service_Blog::instance()->getExtra($aItems, 'user_profile');
 
 		(($sPlugin = Phpfox_Plugin::get('blog.component_controller_index_process_middle')) ? eval($sPlugin) : false);
 		
@@ -313,15 +312,16 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 			{
 				$this->template()->setMeta('keywords', Tag_Service_Tag::instance()->getKeywords($aItem['tag_list']));
 			}
-		}		
-		
+		}
+
 		/**
 		 * Here we assign the needed variables we plan on using in the template. This is used to pass
 		 * on any information that needs to be used with the specific template for this component.
 		 */
+		$cnt = $this->search()->browse()->getCount();
 		$this->template()->assign(array(
-					'iCnt' => $this->search()->browse()->getCount(),
-					'aItems' => $aItems,
+					'iCnt' => $cnt,
+					'aBlogs' => $aItems,
 					'sSearchBlock' => Phpfox::getPhrase('blog.search_blogs_'),
 					'bIsProfile' => $bIsProfile,
 					'sTagType' => ($bIsProfile === true ? 'blog_profile' : 'blog'),
@@ -338,8 +338,8 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 				'pager.css' => 'style_css',
 				'feed.js' => 'module_feed'
 			)
-		);			
-		
+		);
+
 		$this->setParam('global_moderation', array(
 				'name' => 'blog',
 				'ajax' => 'blog.moderation',
@@ -355,7 +355,8 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 				)
 			)
 		);
-		
+
+		/*
 		$iStartCheck = 0;
 		if (isset($bIsValidCategory))
 		{
@@ -390,12 +391,11 @@ class Blog_Component_Controller_Index extends Phpfox_Component
 					'3' => $aRediAllow
 				)
 			);
-		
 		if (Phpfox::getParam('core.force_404_check') && !Phpfox::getService('core.redirect')->check404($aCheckParams))
 		{
 			return Phpfox_Module::instance()->setController('error.404');
 		}			
-				
+		*/
 		(($sPlugin = Phpfox_Plugin::get('blog.component_controller_index_process_end')) ? eval($sPlugin) : false);
 	}
 	

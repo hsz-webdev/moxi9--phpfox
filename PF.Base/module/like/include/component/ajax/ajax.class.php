@@ -25,6 +25,11 @@ class Like_Component_Ajax_Ajax extends Phpfox_Ajax
         }
 		if (Phpfox::getService('like.process')->add($this->get('type_id'), $this->get('item_id')))
 		{
+			if ($this->get('type_id') == 'pages') {
+				$this->call('window.location.reload();');
+				return;
+			}
+
 			if ($this->get('type_id') == 'feed_mini' && $this->get('custom_inline'))
 			{
 				$this->_loadCommentLikes();
@@ -73,13 +78,14 @@ class Like_Component_Ajax_Ajax extends Phpfox_Ajax
 	{				
 		$this->error(false);
 		Phpfox::getBlock('like.browse');
-		$sTitle = (($this->get('type_id') == 'pages' && $this->get('force_like') == '') ? Phpfox::getPhrase('like.members') : Phpfox::getPhrase('like.people_who_like_this'));
+		$sTitle = (($this->get('type_id') == 'pages' && $this->get('force_like') == '') ? Phpfox::getPhrase('like.members') : 'Followers');
 		if ($this->get('dislike') == 1)
 		{
 			$sTitle = Phpfox::getPhrase('like.people_who_disliked_this');
 		}
 		
 		$this->setTitle($sTitle);
+		$this->call('<script>$Core.loadInit();</script>');
 	}
 	
 	private function _loadCommentLikes($bIsDislike = false)
@@ -180,7 +186,11 @@ class Like_Component_Ajax_Ajax extends Phpfox_Ajax
 		$sContent = $this->getContent(false);
 		$sContent = str_replace("'", "\'", $sContent);
 
-		$sType = str_replace('-', '_', $sType);		
+		$sType = str_replace('-', '_', $sType);
+		if ($sType == 'app') {
+			$feed = \Phpfox_Database::instance()->select('*')->from(':feed')->where(['feed_id' => $sId])->get();
+			$sType = $feed['type_id'];
+		}
 		
 		$sCall = ' $("#js_feed_like_holder_' . $sType . '_' . $sId . '").find(\'.js_comment_like_holder:first\').html(\'' . $sContent . '\');';
 		$this->call($sCall);

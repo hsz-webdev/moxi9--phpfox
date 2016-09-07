@@ -23,7 +23,7 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 		$this->_sTable = Phpfox::getT('setting');
 	}
 	
-	public function getForSearch()
+	public function getForSearch($aSkipModules = [])
 	{
 		$aRows = $this->database()->select('s.*, lp.text AS language_var_name')
 			->from($this->_sTable, 's')
@@ -34,16 +34,31 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 					"AND lp.var_name = s.phrase_var_name"
 				)
 			)			
-			->execute('getSlaveRows');		
-		
+			->execute('getSlaveRows');
+
+		$aNotAllowedToEdit = [];
+		foreach (Phpfox_Setting::instance()->override as $key => $value) {
+			$aNotAllowedToEdit[] = $key;
+		}
+
 		$aReturn = array();
 		foreach ($aRows as $iKey => $aRow)
 		{
 			if (!empty($aRow['language_var_name']))
 			{
+				if ($aSkipModules && in_array($aRow['module_id'], $aSkipModules)) {
+					continue;
+				}
+
+				if (in_array($aRow['module_id'] . '.' . $aRow['var_name'], $aNotAllowedToEdit) || in_array($aRow['module_id'] . '.' . $aRow['var_name'], Phpfox_Setting::instance()->hide))
+				{
+					continue;
+				}
+
 				$aParts = explode('</title><info>', $aRow['language_var_name']);
 				$aReturn[] = array(
-					'link' => Phpfox_Url::instance()->makeUrl('admincp.setting.edit', array('setting-id' => $aRow['setting_id'])),
+					'module_id' => $aRow['module_id'],
+					'link' => Phpfox_Url::instance()->makeUrl('admincp.setting.edit', array('module-id' => $aRow['module_id'])) . '#' . $aRow['var_name'],
 					'type' => 'Global Setting',
 					'title' => str_replace('<title>', '', $aParts[0])
 				);
@@ -147,94 +162,35 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 		// Load all the editors that are valid
 		$aWysiwygs = array();				
 		$aTimezones = Phpfox::getService('core')->getTimeZones();
-		
-		if (defined('PHPFOX_IS_HOSTED_SCRIPT') && !defined('PHPFOX_GROUPLY_TEST'))
-		{
-			$aNotAllowedToEdit = array(
-					'core.allow_cdn',
-					'core.amazon_access_key',
-					'core.amazon_secret_key',
-					'core.amazon_bucket',
-					'core.amazon_bucket_created',
-					'core.cdn_cname',
-					'core.cdn_amazon_https',
-					'core.cdn_service',
-					'core.enable_amazon_expire_urls',
-					'core.amazon_s3_expire_url_timeout',
-					'core.rackspace_username',
-					'core.rackspace_key',
-					'core.rackspace_container',
-					'core.rackspace_url',
-					'core.unzip_path',
-					'core.tar_path',
-					'core.zip_path',
-					'core.session_prefix',
-					'core.cookie_path',
-					'core.cookie_domain',
-					'core.admin_debug_mode',
-					'core.log_missing_images',
-					'core.cache_plugins',
-					'core.ftp_enabled',
-					'core.ftp_host',
-					'core.ftp_username',
-					'core.ftp_password',
-					'core.ftp_dir_path',
-					'log.active_session',
-					'core.build_format',
-					'core.log_site_activity',
-					'core.cache_js_css',
-					'core.enable_getid3_check',
-					'core.force_https_secure_pages',
-					'core.disable_hash_bang_support',
-					'core.site_wide_ajax_browsing',
-					'core.mail_smtp_password',
-					'core.use_dnscheck',
-					'core.mail_smtp_port',
-					'core.mail_smtp_username',
-					'core.mail_smtp_authentication',
-					'core.mailsmtphost',
-					'core.method',
-					'apps.openssl_config_path',
-					'apps.token_keep_alive',
-					'video.allow_video_uploading',
-				'video.params_for_ffmpeg',
-				'video.params_for_mencoder',
-				'video.params_for_mencoder_fallback',
-				'video.enable_flvtool2',
-				'video.params_for_flvtool2',
-				'video.flvtool2_path',
-				'video.vidly_support',
-				'video.vidly_user_key',
-				'video.vidly_api_key',
-				'video.mencoder_path',
-				'video.ffmpeg_path',
-				'photo.rename_uploaded_photo_names',
-				'photo.delete_original_after_resize',
-				'core.build_file_dir',
-				'core.allow_html_in_activity_feed'
-			);
+
+		$aNotAllowedToEdit = [];
+		foreach (Phpfox_Setting::instance()->override as $key => $value) {
+			$aNotAllowedToEdit[] = $key;
 		}
 		
 		$aCacheSetting = array();
 		foreach ($aRows as $iKey => $aRow)
 		{
+			if (in_array($aRow['var_name'], ['wysiwyg'])) {
+				unset($aRows[$iKey]);
+
+				continue;
+			}
+
 			if (isset($aCacheSetting[$aRow['var_name']]))
 			{
 				unset($aRows[$iKey]);
 				
 				continue;
-			}			
-			
-			if (defined('PHPFOX_IS_HOSTED_SCRIPT') && !defined('PHPFOX_SHOW_HIDDEN') && !defined('PHPFOX_GROUPLY_TEST'))
-			{				
-				if (in_array($aRow['module_id'] . '.' . $aRow['var_name'], $aNotAllowedToEdit))
-				{
-					unset($aRows[$iKey]);
-					
-					continue;
-				}	
 			}
-			
+
+			if (in_array($aRow['module_id'] . '.' . $aRow['var_name'], $aNotAllowedToEdit) || in_array($aRow['module_id'] . '.' . $aRow['var_name'], Phpfox_Setting::instance()->hide))
+			{
+				unset($aRows[$iKey]);
+
+				continue;
+			}
+
 			$aCacheSetting[$aRow['var_name']] = true;
 			
 			if (!empty($aRow['language_var_name']))
@@ -249,17 +205,7 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 				
 				// Make sure an editor is valid before we display it
 				if ($aRow['var_name'] == 'wysiwyg')
-				{					
-					/*
-					foreach ($aArray['values'] as $iSubKey => $sSubValue)
-					{
-						if (!in_array($sSubValue, $aWysiwygs))
-						{
-							unset($aArray['values'][$iSubKey]);
-						}
-					}
-					*/
-					
+				{
 					$aArray['values'] = $aWysiwygs;					
 					$aRows[$iKey]['values'] = $aArray;					
 					$aRows[$iKey]['value_actual'] = implode(',', $aRows[$iKey]['values']['values']);					
@@ -328,7 +274,8 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 				$aRows[$iKey]['type_id'] = 'drop_with_key';
 				$aRows[$iKey]['values'] = $aUserArray;		
 			}
-			
+
+			/*
 			if ($aRow['var_name'] == 'cdn_service')
 			{
 				$aRows[$iKey]['type_id'] = 'drop';
@@ -338,6 +285,7 @@ class Admincp_Service_Setting_Setting extends Phpfox_Service
 				);
 				$aRows[$iKey]['value_actual'] = implode(',', $aCdns);				
 			}
+			*/
 			
 			if ($aRow['var_name'] == 'captcha_font')
 			{

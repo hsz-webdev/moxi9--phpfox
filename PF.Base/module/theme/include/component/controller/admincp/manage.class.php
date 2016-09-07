@@ -17,8 +17,23 @@ class Theme_Component_Controller_Admincp_Manage extends Phpfox_Component {
 		if (($default = $this->request()->get('default'))) {
 			return $Theme->setDefault();
 		}
+		else if ($flavorId = $this->request()->get('flavor-delete')) {
+			$Session->remove($key);
+			$Theme->deleteFlavor($flavorId);
+			$this->url()->send('admincp.theme.manage', ['id' => $this->request()->get('id')], 'Flavor successfully deleted.');
+		}
 		else if ($this->request()->get('export')) {
 			$Theme->export();
+		}
+		else if ($this->request()->get('merge')) {
+			$Theme->merge();
+
+			$this->url()->send('admincp.theme.manage', ['id' => $this->request()->get('id')], 'Successfully merged the theme.');
+		}
+		else if ($this->request()->get('rebuild')) {
+			$Theme->rebuild();
+
+			$this->url()->send('admincp.theme.manage', ['id' => $this->request()->get('id')], 'Successfully merged the theme.');
 		}
 
 		$Service = new Core\Theme\Service($Theme);
@@ -30,6 +45,30 @@ class Theme_Component_Controller_Admincp_Manage extends Phpfox_Component {
 				'posted' => true
 			];
 		}
+
+		$Request = $this->request();
+		if ($Request->getHeader('X-File-Name')) {
+			$dir = PHPFOX_DIR_FILE . 'logos/';
+			if (!is_dir($dir)) {
+				mkdir($dir);
+			}
+
+			$file = uniqid() . '.' . \Phpfox_File::instance()->extension($Request->getHeader('X-File-Name'));
+			if (isset($_FILES['ajax_upload'])) {
+				$_FILES['image'] = $_FILES['ajax_upload'];
+				file_put_contents($dir . $file, file_get_contents($_FILES['image']['tmp_name']));
+			}
+			else {
+				file_put_contents($dir . $file, file_get_contents('php://input'));
+			}
+
+			$url = str_replace(['/index.php', 'http://'], ['', '//'], \Phpfox::getParam('core.path')) . 'PF.Base/file/logos/' . $file;
+
+			return [
+				'run' => "\$('input[name=\"design[logoUrl]\"]').val(\"'{$url}'\").trigger('change');"
+			];
+		}
+
 
 		if (($load = $this->request()->get('load'))) {
 			if ($this->request()->isPost()) {

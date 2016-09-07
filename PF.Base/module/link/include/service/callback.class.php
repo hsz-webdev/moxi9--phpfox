@@ -203,6 +203,7 @@ class Link_Service_Callback extends Phpfox_Service
 			
 			unset($aReturn['feed_status'], $aReturn['feed_image'], $aReturn['feed_title'], $aReturn['feed_content']);
 		}
+		/*
 		elseif (!PHPFOX_IS_AJAX && defined('PHPFOX_IS_USER_PROFILE') && !empty($aRow['parent_user_name']) && $aRow['parent_user_id'] != Profile_Service_Profile::instance()->getProfileUserId())
 		{
 			$aReturn['feed_mini'] = true;
@@ -211,6 +212,7 @@ class Link_Service_Callback extends Phpfox_Service
 			
 			unset($aReturn['feed_status'], $aReturn['feed_image'], $aReturn['feed_title'], $aReturn['feed_content']);
 		}
+		*/
 		else 
 		{
 			if ($aRow['has_embed'])
@@ -377,16 +379,6 @@ class Link_Service_Callback extends Phpfox_Service
 			'message' => $sPhrase,
 			'icon' => Phpfox_Template::instance()->getStyle('image', 'activity.png', 'blog')
 		);
-	}
-	
-	public function getPagePerms()
-	{
-		$aPerms = array();
-		
-		$aPerms['link.share_links'] = Phpfox::getPhrase('link.who_can_share_a_link');
-		$aPerms['link.view_browse_links'] = Phpfox::getPhrase('link.who_can_view_browse_links');
-		
-		return $aPerms;
 	}
 	
 	public function canViewPageSection($iPage)

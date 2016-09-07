@@ -15,6 +15,10 @@ defined('PHPFOX') or exit('NO DICE!');
  */
 class Privacy_Service_Privacy extends Phpfox_Service 
 {
+	public $service;
+	public $isCount = false;
+	public $condition = [];
+
 	/**
 	 * Class constructor
 	 */	
@@ -194,6 +198,18 @@ class Privacy_Service_Privacy extends Phpfox_Service
 		
 		$oObject = Phpfox::getService($aCond['service']);
 
+		$this->service = $oObject;
+		$this->isCount = $bIsCount;
+		$this->condition = $aCond;
+
+		if ($sPlugin = Phpfox_Plugin::get('privacy.service_privacy_buildprivacy')) {
+			eval($sPlugin);
+		}
+
+		if (isset($callback) && is_callable($callback)) {
+			return call_user_func($callback, $this);
+		}
+
 		/*
 		if (Phpfox::getUserParam('core.can_view_private_items'))
 		{
@@ -217,6 +233,7 @@ class Privacy_Service_Privacy extends Phpfox_Service
 			return;
 		}
 		*/
+		/*
 		if (Phpfox::getUserParam('core.can_view_private_items'))
 		{
 			$oObject->getQueryJoins($bIsCount, true);
@@ -228,6 +245,7 @@ class Privacy_Service_Privacy extends Phpfox_Service
 
 			return;
 		}
+		*/
 		
 		$aUserCond = array();
 		$aFriendCond = array();

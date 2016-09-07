@@ -96,7 +96,14 @@ class Phpfox_Request
 	}
 
 	public function segment($cnt) {
-		return $this->get('req' . $cnt);
+		static $uri;
+		$cnt--;
+		if (!$uri) {
+			$u = \Phpfox_Url::instance()->getUri();
+			$uri = explode('/', trim($u, '/'));
+		}
+
+		return (isset($uri[$cnt]) ? $uri[$cnt] : null);
 	}
 
 	public function authUser() {
@@ -132,15 +139,19 @@ class Phpfox_Request
      * @param string $sCommand is any extra commands we need to execute
      * @return string parameter value
      */
-    public function get($sName = '', $mDef = '')
+    public function get($sName = null, $mDef = '')
     {
     	if ($this->_sName)
     	{
     		$sName = $this->_sName;
     	}
+
+	    if ($sName === null) {
+		    return (object) $this->_aArgs;
+	    }
     	
     	(($sPlugin = Phpfox_Plugin::get('request_get')) ? eval($sPlugin) : false);
-    	
+
     	return (isset($this->_aArgs[$sName]) ? ((empty($this->_aArgs[$sName]) && isset($this->_aName[$sName])) ? true : $this->_aArgs[$sName]) : $mDef);
     }
 
@@ -167,6 +178,7 @@ class Phpfox_Request
     	
     	foreach ($mName as $sKey => $sValue)
     	{
+		    $_REQUEST[$sKey] = $sValue;
     		$this->_aArgs[$sKey] = $sValue;
     	}
     }
@@ -229,7 +241,7 @@ class Phpfox_Request
     			{
 					if (Phpfox::getParam('core.allow_cdn'))
 					{
-						return Phpfox::getLib('cdn')->getServerId();
+						return (int) Phpfox::getLib('cdn')->getServerId();
 					}
     				
     				return 0;

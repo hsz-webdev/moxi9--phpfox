@@ -1132,15 +1132,20 @@ class Phpfox_File
 				define('PHPFOX_HTML5_PHOTO_UPLOAD', true);
 			}
 
-			$file = PHPFOX_DIR_FILE . 'static/' . uniqid();
-			file_put_contents($file, file_get_contents('php://input'));
-			$_FILES['image'] = [
-				'tmp_name' => $file,
-				'name' => $Request->getHeader('X-File-Name'),
-				'type' => $Request->getHeader('X-File-Type'),
-				'size' => $Request->getHeader('X-File-Size'),
-				'error' => 0
-			];
+			if (isset($_FILES['ajax_upload'])) {
+				$_FILES['image'] = $_FILES['ajax_upload'];
+			}
+			else {
+				$file = PHPFOX_DIR_FILE . 'static/' . uniqid() . '.' . \Phpfox_File::instance()->extension($Request->getHeader('X-File-Name'));
+				file_put_contents($file, file_get_contents('php://input'));
+				$_FILES['image'] = [
+					'tmp_name' => $file,
+					'name' => $Request->getHeader('X-File-Name'),
+					'type' => $Request->getHeader('X-File-Type'),
+					'size' => $Request->getHeader('X-File-Size'),
+					'error' => 0
+				];
+			}
 		}
 		
 		if (is_string($aSupported))
@@ -1163,7 +1168,7 @@ class Phpfox_File
 		$this->_aSupported = $aSupported;
 		
 		$this->_buildFile($sFormItem);
-		
+
 		if ($iMaxSize !== null)
 		{
 			$this->_iMaxSize = $iMaxSize;
@@ -1186,7 +1191,7 @@ class Phpfox_File
 		{
 			return $bReturn;
 		}
-		
+
 		if (Phpfox_Image::instance()->isImageExtension($this->_aFile['ext']) && !Phpfox_Image::instance()->isImage($this->_aFile['tmp_name']))
 		{
 			return Phpfox_Error::set(Phpfox::getPhrase('core.not_a_valid_image_we_only_accept_the_following_file_extensions_support', array('support' => implode(', ', $aSupported))));
@@ -1254,7 +1259,9 @@ class Phpfox_File
 	    if (defined('PHPFOX_APP_USER_ID') || defined('PHPFOX_HTML5_PHOTO_UPLOAD'))
 		{
 			 @copy($this->_aFile['tmp_name'], $sDest);
-			 @unlink($this->_aFile['tmp_name']);
+			if (!defined('PHPFOX_FILE_DONT_UNLINK')) {
+				@unlink($this->_aFile['tmp_name']);
+			}
 		}
         else if (!@move_uploaded_file($this->_aFile['tmp_name'], $sDest))
         {
@@ -1981,7 +1988,7 @@ class Phpfox_File
      * @param string $sFormItem The ID to connect with the $_FORM variable
      */
     private function _buildFile($sFormItem)
-    { 	
+    {
     	if (strpos($sFormItem, ']') === false)
         {
             $this->_aFile = $_FILES[$sFormItem];
@@ -2014,17 +2021,7 @@ class Phpfox_File
      * @return bool TRUE if mime type checked out and FALSE if there is no mime type
      */
 	private function _verify($sFileName)
-	{		
-		if (Phpfox::getParam('core.enable_getid3_check'))
-		{		
-			$aMeta = $this->getMeta($this->_aFile['tmp_name']);
-			
-			if (!isset($aMeta['mime_type']))
-			{
-				return Phpfox_Error::set(Phpfox::getPhrase('core.uploaded_file_is_not_valid'));
-			}
-		}		
-		
+	{
 		return true;
 	}
 }

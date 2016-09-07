@@ -17,7 +17,7 @@ defined('PHPFOX') or exit('NO DICE!');
 	<div class="pages_header_info set_to_fixed" data-class="pages_header_fixed">
 		<div>
 			<div class="pages_header_image">
-				{img thickbox=true server_id=$aPage.image_server_id title=$aPage.title path='core.url_user' file=$aPage.image_path suffix='_120_square'}
+				{img thickbox=true server_id=$aPage.image_server_id title=$aPage.title path='pages.url_image' file=$aPage.pages_image_path suffix='_120'}
 			</div>
 		</div>
 		<div>
@@ -32,6 +32,13 @@ defined('PHPFOX') or exit('NO DICE!');
 			</header>
 
 			{template file='pages.block.joinpage'}
+			
+			{if !$aPage.is_admin && Phpfox::getUserParam('pages.can_claim_page') && empty($aPage.claim_id)}
+			<a href="#?call=contact.showQuickContact&amp;height=600&amp;width=600&amp;page_id={$aPage.page_id}" class="inlinePopup js_claim_page" title="{phrase var='pages.claim_page'}">
+				{phrase var='pages.claim_page'}
+			</a>
+			{/if}
+			
 		</div>
 
 		{if !Phpfox::isMobile() && (Phpfox::getUserParam('pages.can_moderate_pages') || $aPage.is_admin)}
@@ -63,7 +70,11 @@ defined('PHPFOX') or exit('NO DICE!');
 				{foreach from=$aSubMenus key=iKey name=submenu item=aSubMenu}
 				<li>
 					<a href="{url link=$aSubMenu.url)}">
+						{if (isset($aSubMenu.title))}
+						{$aSubMenu.title}
+						{else}
 						{phrase var=$aSubMenu.module'.'$aSubMenu.var_name}
+						{/if}
 					</a>
 				</li>
 				{/foreach}
@@ -87,26 +98,3 @@ defined('PHPFOX') or exit('NO DICE!');
 	{/if}
 
 </div>
-
-{*
-<div class="profile_image">
-    <div class="profile_image_holder">
-		{if $aPage.is_app}
-		{img server_id=$aPage.image_server_id path='app.url_image' file=$aPage.aApp.image_path suffix='_120' max_width='175' max_height='300' title=$aPage.aApp.app_title}
-		{else}
-			{if Phpfox::getParam('core.keep_non_square_images')}
-				{img thickbox=true server_id=$aPage.image_server_id title=$aPage.title path='core.url_user' file=$aPage.image_path suffix='_120' max_width='175' max_height='300'}
-			{else}
-				{img thickbox=true server_id=$aPage.image_server_id title=$aPage.title path='core.url_user' file=$aPage.image_path suffix='_120_square' max_width='175' max_height='300'}
-			{/if}
-		{/if}
-	</div>
-	<div class="profile_no_timeline">
-
-		{if isset($aPage.title)}
-		{template file='pages.block.joinpage'}
-		{/if}
-
-	</div>
-</div>
-*}

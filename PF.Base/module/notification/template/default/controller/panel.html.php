@@ -17,6 +17,9 @@
 	</li>
 	{/foreach}
 </ul>
+<div class="panel_actions">
+	<a href="#" onclick="$('.js_notification_trash > i').removeClass('fa-trash').addClass('fa-circle-o-notch').addClass('fa-spin'); $(this).ajaxCall('notification.removeAll'); return false;" class="js_hover_title js_notification_trash"><i class="fa fa-trash"></i><span class="js_hover_info">Remove all notifications</span></a>
+</div>
 {else}
 <div class="message">
 	No new notifications

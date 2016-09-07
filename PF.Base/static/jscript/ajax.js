@@ -38,7 +38,7 @@ window.onbeforeunload = function()
  * @param	string	sFunction	Name of the function we plan to use
  * @param	string	sId	Form ID
  */
-$.fn.ajaxCall = function(sCall, sExtra, bNoForm, sType)
+$.fn.ajaxCall = function(sCall, sExtra, bNoForm, sType, callback)
 {	
 	if (empty(sType))
 	{
@@ -80,14 +80,19 @@ $.fn.ajaxCall = function(sCall, sExtra, bNoForm, sType)
 		sParams += '&' + getParam('sGlobalTokenName') + '[profile_user_id]=' + (oCore['profile.user_id'] ? oCore['profile.user_id'] : '0');
 	}
 
-	oCacheAjaxRequest = $.ajax(
-	{
-			type: sType,
-		  	url: sUrl,
-		  	dataType: "script",	
-			data: sParams			
-		}
-	);
+	var params = {
+		type: sType,
+		url: sUrl,
+		dataType: "script",
+		data: sParams
+	};
+	var self = this;
+	if (typeof(callback) == 'function') {
+		params.success = function(e) {
+			callback(e, self);
+		};
+	}
+	oCacheAjaxRequest = $.ajax(params);
 	return oCacheAjaxRequest;
 };
 
@@ -179,6 +184,16 @@ $Core.processPostForm = function(e, obj) {
 		$Core.loadInit();
 	}
 
+	if (typeof(e.prepend) == 'object') {
+		$(e.prepend.to).prepend(e.prepend.with);
+		$Core.loadInit();
+	}
+
+	if (typeof(e.html) == 'object') {
+		$(e.html.to).html(e.html.with);
+		$Core.loadInit();
+	}
+
 	if (typeof(e.error) == 'string') {
 		obj.prepend(e.error);
 	}
@@ -191,6 +206,10 @@ $Core.processPostForm = function(e, obj) {
 
 	if (typeof(e.redirect) == 'string') {
 		window.location.href = e.redirect;
+	}
+
+	if (typeof(e.push) == 'string') {
+		history.pushState(null, null, e.redirect);
 	}
 
 	if (typeof(e.run) == 'string') {
@@ -244,11 +263,26 @@ $Behavior.onAjaxSubmit = function() {
 		var t = $(this),
 			url = (t.data('url') ? t.data('url') : t.attr('href'));
 
+		if (t.data('add-class')) {
+			t.addClass(t.data('add-class'));
+		}
+
+		if (t.data('add-spin')) {
+			t.parent().prepend('<i class="fa fa-spin fa-circle-o-notch"></i>');
+		}
+
+		if (t.data('add-process')) {
+			$Core.processing();
+		}
+
 		$.ajax({
 			url: url,
 			contentType: 'application/json',
 			data: 'is_ajax_get=1',
 			success: function(e) {
+				if (t.data('add-process')) {
+					$Core.processingEnd();
+				}
 				$Core.processPostForm(e, t);
 			}
 		});
@@ -256,9 +290,31 @@ $Behavior.onAjaxSubmit = function() {
 		return false;
 	});
 
+	$('.button').click(function() {
+		$('.button.last_clicked_button').removeClass('last_clicked_button');
+		$(this).addClass('last_clicked_button');
+	});
 	$('.ajax_post').submit(function() {
 		var t = $(this),
-			data = t.serialize();
+			callback = t.data('callback'),
+			callbackStart = t.data('callback-start'),
+			includeButton = t.data('include-button');
+
+		t.find('.form-spin-it').remove();
+		var b = t.find('.button');
+		if (t.data('add-spin')) {
+			b.before('<span class="form-spin-it"><i class="fa fa-spin fa-circle-o-notch"></i></span>');
+			b.hide();
+		}
+
+		if (callbackStart) {
+			window[callbackStart](t);
+		}
+
+		var data = t.serialize();
+		if (includeButton) {
+			data += '&' + $('.button.last_clicked_button').attr('name') + '=1';
+		}
 
 		t.find('.error_message').remove();
 		$.ajax({
@@ -266,7 +322,14 @@ $Behavior.onAjaxSubmit = function() {
 			type: 'POST',
 			data: data + '&is_ajax_post=1',
 			success: function(e) {
+				$('.button.last_clicked_button').removeClass('last_clicked_button');
+				b.show();
+				t.find('.form-spin-it').remove();
+
 				$Core.processPostForm(e, t);
+				if (callback) {
+					// window[callback](e, t, t.serializeArray());
+				}
 			}
 		});
 
@@ -306,24 +369,80 @@ $Core.upload = {
 		}, false);
 
 		f_input.addEventListener("change", function() {
+			$Core.processing();
 			$Core.upload._upload(obj, this);
 		}, false);
 	},
 
 	file: function(obj, file) {
+
+		/**
+		 * xhr.setRequestHeader("X-File-Name", file.name);
+		 xhr.setRequestHeader("X-File-Size", file.size);
+		 xhr.setRequestHeader("X-File-Type", file.type);
+		 */
+
+		var data = new FormData();
+		data.append('ajax_upload', file);
+
+		if (obj.data('onstart')) {
+			var thisFunction = window[obj.data('onstart')];
+			thisFunction();
+		}
+
+		$.ajax({
+			url: obj.data('url'),
+			data: data,
+			cache: false,
+			contentType: false,
+			processData: false,
+			headers: {
+				'X-File-Name': file.name,
+				'X-File-Size': file.size,
+				'X-File-Type': file.type
+			},
+			type: 'POST',
+			success: function(data) {
+				$Core.processingEnd();
+				$Core.processPostForm(data, obj);
+			}
+		});
+
+		return;
+
 		var xhr;
 
 		xhr = new XMLHttpRequest();
 
 		xhr.onreadystatechange = function() {
 			if (xhr.readyState == 4) {
+				$Core.processingEnd();
 				$Core.processPostForm($.parseJSON(xhr.responseText), obj);
 			}
-		}
+		};
+
+
 
 		xhr.open('POST', obj.data('url'), true);
 
 		xhr.setRequestHeader("Content-Type", "multipart/form-data");
+		/*
+		var boundary = Math.random().toString().substr(2), multipart = '';
+		xhr.setRequestHeader("content-type",
+			"multipart/form-data; charset=utf-8; boundary=" + boundary);
+			*/
+		/*
+		// for(var key in args[0].data){
+			multipart += "--" + boundary
+				+ "\r\nContent-Disposition: form-data; name=\"code\""
+				// + "\r\nContent-type: application/octet-stream"
+				// + "\r\n\r\n" + args[0].data[key] + "\r\n";
+		// }
+		multipart += "--"+boundary+"--\r\n";
+		*/
+		// xhr.setRequestHeader('Content-Disposition', "form-data; name=\"code\"");
+		// xhr.setRequestHeader('Content-type', file.type);
+
 		xhr.setRequestHeader("X-File-Name", file.name);
 		xhr.setRequestHeader("X-File-Size", file.size);
 		xhr.setRequestHeader("X-File-Type", file.type);

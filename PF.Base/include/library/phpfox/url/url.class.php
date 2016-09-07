@@ -361,6 +361,7 @@ class Phpfox_Url
         			$sName = $iKey;
         		}
 
+	            unset($_GET[$sName]);
             	unset($this->_aParams[$sName]);
             }
         }
@@ -759,7 +760,7 @@ class Phpfox_Url
 		{
 			$aExtra = array_merge($aExtra, $aExtraLinks);	
 		}
-		
+
 		$sUrl = Phpfox_Url::instance()->makeUrl($sLink, $aExtra);
 		
 		if ($bRedirect === true)
@@ -867,7 +868,13 @@ class Phpfox_Url
 	private function _send($sUrl, $iHeader = null)
 	{
 		// Clean buffer
-		ob_clean();		
+		ob_clean();
+
+		if (Phpfox_Request::instance()->get('is_ajax_post')) {
+			header('Content-type: application/json');
+			echo json_encode(['redirect' => $sUrl]);
+			exit;
+		}
 		
 		if (defined('PHPFOX_IS_AJAX_PAGE') && PHPFOX_IS_AJAX_PAGE)
 		{
@@ -880,9 +887,10 @@ class Phpfox_Url
 		{
 			header($this->_aHeaders[$iHeader]);
 		}
-		
+
 		// Send the user to the new location
 		header('Location: ' . $sUrl);
+		exit;
 	}
 	
 	/**
@@ -953,13 +961,13 @@ class Phpfox_Url
 				
 				if (is_array($sValue)) {
 					foreach ($sValue as $subKey => $subValue) {
-						$sUrls .= $sKey . '[' . $subKey . ']=' . str_replace('.', '', $subValue) . '&';
+						$sUrls .= $sKey . '[' . $subKey . ']=' . (Phpfox::isAdminPanel() ? $subValue : str_replace('.', '', $subValue)) . '&';
 					}
 
 					continue;
 				}
 				
-				$sUrls .= $sKey . '=' . str_replace('.', '', $sValue) . '&';
+				$sUrls .= $sKey . '=' . (Phpfox::isAdminPanel() ? $sValue : str_replace('.', '', $sValue)) . '&';
 			}
 			$sUrls = rtrim($sUrls, '&');
 		}		
@@ -987,7 +995,7 @@ class Phpfox_Url
 			)) {
 			return '/';
 		}
-		return '/' . ltrim(explode('?', str_replace(Phpfox::getParam('core.folder'), '', $_SERVER['REQUEST_URI']))[0], '/');
+		return '/' . ltrim(explode('?', (Phpfox::getParam('core.folder') != '/' ? str_replace(Phpfox::getParam('core.folder'), '', $_SERVER['REQUEST_URI']) : $_SERVER['REQUEST_URI']))[0], '/');
 	}
 	
 	/**

@@ -169,7 +169,7 @@ class Feed_Component_Block_Display extends Phpfox_Component
 				$sCustomViewType = Phpfox::getPhrase('feed.feed');
 			}
 		}
-		
+
 		if ((!isset($aFeedCallback['item_id']) || $aFeedCallback['item_id'] == 0))
 		{
 			$aFeedCallback['item_id'] = ((int)$this->request()->get('amp;callback_item_id')) > 0 ? $this->request()->get('amp;callback_item_id') : $this->request()->get('callback_item_id');
@@ -184,7 +184,7 @@ class Feed_Component_Block_Display extends Phpfox_Component
 			$bUseFeedForm = false;
 		}
 
-		if (!Phpfox::isUser() || defined('PHPFOX_IS_PAGES_VIEW')) {
+		if (!Phpfox::isUser() || defined('PHPFOX_IS_PAGES_VIEW') || $sCustomViewType) {
 			$bStreamMode = false;
 		}
 
@@ -193,7 +193,7 @@ class Feed_Component_Block_Display extends Phpfox_Component
 		if (PHPFOX_IS_AJAX || !$bForceReloadOnPage || $bIsCustomFeedView)
 		{
 			$aRows = Feed_Service_Feed::instance()->callback($aFeedCallback)->get(($bIsProfile > 0 ? $iUserId : null), ($this->request()->get('feed') ? $this->request()->get('feed') : null), $iFeedPage, $bStreamMode);
-			
+
 			if (empty($aRows))
 			{
 				$iFeedPage++;
@@ -206,6 +206,12 @@ class Feed_Component_Block_Display extends Phpfox_Component
 			$aRows = Feed_Service_Feed::instance()->callback($aFeedCallback)->get(($bIsProfile > 0 ? $iUserId : null), ($this->request()->get('feed') ? $this->request()->get('feed') : null), $iFeedPage);
 		}
 		*/
+
+		foreach ($aRows as $iKey => $aRow) {
+			if (isset($aRow['feed_mini'])) {
+				// unset($aRows[$iKey]['feed_mini'], $aRows[$iKey]['feed_mini'], $aRows[$iKey]['feed_mini_content']);
+			}
+		}
 		// d($aRows); exit;
 
 		if (($this->request()->getInt('status-id') 
@@ -216,8 +222,10 @@ class Feed_Component_Block_Display extends Phpfox_Component
 			) 
 			&& isset($aRows[0]))
 		{
-			$aRows[0]['feed_view_comment'] = true;
-			$this->setParam('aFeed', array_merge(array('feed_display' => 'view', 'total_like' => $aRows[0]['feed_total_like']), $aRows[0]));                        
+			if (isset($aRows[0]['feed_total_like'])) {
+				$aRows[0]['feed_view_comment'] = true;
+				$this->setParam('aFeed', array_merge(array('feed_display' => 'view', 'total_like' => $aRows[0]['feed_total_like']), $aRows[0]));
+			}
 		}	
 		
 		(($sPlugin = Phpfox_Plugin::get('feed.component_block_display_process')) ? eval($sPlugin) : false);		
@@ -231,7 +239,10 @@ class Feed_Component_Block_Display extends Phpfox_Component
 		
 		$iUserid = ($bIsProfile > 0 ? $iUserId : null);
 		$iTotalFeeds = (int) Phpfox::getComponentSetting(($iUserid === null ? Phpfox::getUserId() : $iUserid), 'feed.feed_display_limit_' . ($iUserid !== null ? 'profile' : 'dashboard'), Phpfox::getParam('feed.feed_display_limit'));
-
+		
+		if (PHPFOX_IS_AJAX && (!$iTotalFeeds || $iTotalFeeds == 0)) {
+			return false;
+		}
 		/*	
 		if (isset($sActivityFeedHeader))
 		{
@@ -274,7 +285,8 @@ class Feed_Component_Block_Display extends Phpfox_Component
 		}
 		
 		// http://www.phpfox.com/tracker/view/15392/
-		$sIsHashTagSearchValue = urldecode(strip_tags((($this->request()->get('hashtagsearch') ? $this->request()->get('hashtagsearch') : ($this->request()->get('req1') == 'hashtag' ? $this->request()->get('req2') : '')))));
+		$sIsHashTagSearchValue = urldecode(strip_tags($this->request()->get('req2')));
+		/*
 		if(preg_match_all('/[0-9]+/', $sIsHashTagSearchValue, $aMatches))
 		{
 			$sIsHashTagSearchValue = '';
@@ -283,6 +295,7 @@ class Feed_Component_Block_Display extends Phpfox_Component
 				$sIsHashTagSearchValue .= preg_replace('/[0-9]+/', '&#$0;', $sMatch);
 			}
 		}
+		*/
 
 		$this->template()->assign(array(
 				'bUseFeedForm' => $bUseFeedForm,

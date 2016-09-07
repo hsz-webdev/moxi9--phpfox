@@ -156,7 +156,11 @@ defined('PHPFOX') or exit('NO DICE!');
 		
 		<div id="js_pages_block_info" class="js_pages_block page_section_menu_holder" style="display:none;">
 			{plugin call='pages.template_controller_add_1'}
-			{editor id='text'}
+			<div class="table">
+				<div class="table_right">
+					{editor id='text'}
+				</div>
+			</div>
 			<div class="table_clear p_top_8">
 				<input type="submit" value="{phrase var='pages.update'}" class="button" />
 			</div>			
@@ -165,7 +169,7 @@ defined('PHPFOX') or exit('NO DICE!');
 		<div id="js_pages_block_permissions" class="js_pages_block page_section_menu_holder" style="display:none;">
 			<div id="privacy_holder_table">
 				{if $bIsEdit}
-				<div class="table">
+				<div class="table" style="display:none;">
 					<div class="table_left">
 						{phrase var='pages.page_privacy'}:
 					</div>
@@ -177,6 +181,7 @@ defined('PHPFOX') or exit('NO DICE!');
 					</div>			
 				</div>				
 				{/if}
+
 				{if $bIsEdit && $aForms.page_type == '1'}
 				<div class="table">
 					<div class="table_left">
@@ -332,15 +337,7 @@ defined('PHPFOX') or exit('NO DICE!');
 					</div>	
 			</div>
 		{/if}
-		
-		
-		{if $sStep != 'invite' && $bIsNewPage}
-		<strong>{phrase var='pages.after_updating'}:</strong> 
-		<select name="action">
-			<option value="1">{phrase var='pages.go_to_the_next_step'}</option>
-			<option value="2">{phrase var='pages.view_this_page_lower'}</option>
-		</select>		
-		{/if}
+
 	</form>
 </div>
 {else}

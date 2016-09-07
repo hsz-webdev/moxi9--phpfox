@@ -35,7 +35,6 @@ $Behavior.addDraggableToBoxes = function()
     });
 
 	$('.popup').click(function() {
-		p('clicky');
 		tb_show('', $(this).attr('href'), $(this));
 
 		return false;
@@ -527,6 +526,11 @@ function tb_show(caption, url, thisObject, sForceMessage, bForceNoCilck, sType)
 				success: function(e) {
 					if (typeof(e.goto) == 'string') {
 						window.location.href = e.goto;
+						return;
+					}
+
+					if (typeof(e.error) == 'string' && typeof(e.content) != 'string') {
+						$oNew.find('.js_box_content').html('<div class="error_message">' + e.error + '</div>');
 						return;
 					}
 

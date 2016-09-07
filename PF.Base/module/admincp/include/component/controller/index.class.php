@@ -273,6 +273,7 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 				'Attachments' => 'admincp.attachment',
 				'Payment Gateways' => 'admincp.api.gateway',
 				'Language' => 'admincp.language',
+				'Short URLs' => 'admincp.setting.url',
 				// 'admincp.menu_tools_emoticon_package' => 'admincp.emoticon.package',
 				/*
 				'Contact Us' => $this->url()->makeUrl('admincp.setting.edit', ['module-id' => 'contact']),
@@ -281,10 +282,14 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 				*/
 
 				'User',
+				'Settings' => $this->url()->makeUrl('admincp.setting.edit', ['module-id' => 'user']),
+				'Registration' => $this->url()->makeUrl('admincp.setting.edit', ['group-id' => 'registration']),
 				'Relationship Statues' => 'admincp.custom.relationships',
 				'Cancellation Options' => 'admincp.user.cancellations.manage',
 				'Subscription Packages' => 'admincp.subscribe',
 				'E-Gifts' => 'admincp.egift.categories',
+				'Anti-SPAM Questions' => 'admincp.user.spam',
+
 				/*
 				'SEO',
 				'admincp.custom_elements' => 'admincp.seo.meta',
@@ -292,6 +297,7 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 				'admincp.rewrite_url' => 'admincp.seo.rewrite'
 				*/
 			],
+			'<i class="fa fa-th-large"></i>Modules' => 'admincp.product',
 			'<i class="fa fa-bullhorn"></i>Announcements' => 'admincp.announcement',
 			'<i class="fa fa-newspaper-o"></i>Newsletter' => 'admincp.newsletter.manage',
 			'<i class="fa fa-info"></i>Status' => array(
@@ -309,12 +315,14 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 			*/
 			'<i class="fa fa-server"></i>Maintenance' => array(
 				Phpfox::getPhrase('admincp.menu_cache_manager') => 'admincp.maintain.cache',
+				'Reported Items' => 'admincp.report',
 				Phpfox::getPhrase('admincp.admincp_menu_reparser') => 'admincp.maintain.reparser',
 				Phpfox::getPhrase('admincp.remove_duplicates') => 'admincp.maintain.duplicate',
 				Phpfox::getPhrase('admincp.counters') => 'admincp.maintain.counter',
 				Phpfox::getPhrase('admincp.check_modified_files') => 'admincp.checksum.modified',
 				Phpfox::getPhrase('admincp.check_unknown_files') => 'admincp.checksum.unknown',
-				Phpfox::getPhrase('admincp.find_missing_settings') => 'admincp.setting.missing'
+				Phpfox::getPhrase('admincp.find_missing_settings') => 'admincp.setting.missing',
+				'Toggle Modules' => $this->url()->makeUrl('admincp.module', ['view' => 'all'])
 			),
 			'<i class="fa fa-ban"></i>Ban Filters' => array(
 				Phpfox::getPhrase('ban.ban_filter_username') => 'admincp.ban.username',
@@ -350,7 +358,7 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 					$n = 'Toggle Site';
 					break;
 				case 'general':
-					$n = 'Name &amp; Copyright';
+					$n = 'Site Settings';
 					break;
 				case 'mail':
 					$n = 'Mail Server';
@@ -484,9 +492,15 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 						case 'contact':
 							$name = '"Contact Us" Form';
 							break;
+						/*
+						case 'user':
+							$goSettings = true;
+							$name = 'User';
+							break;
+						*/
 						case 'feed':
 							$goSettings = true;
-							$name = 'Activity Feed';
+							$this->template()->setSectionTitle('Activity Feed');
 							break;
 						case 'forum':
 							$name = 'Forums';
@@ -519,7 +533,7 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 
 			$aMenus[$sKey] = $mValue;
 
-			if (is_string($mValue) && $mValue == 'admincp.theme') {
+			if (is_string($mValue) && $mValue == 'admincp.theme' && PHPFOX_IS_TECHIE) {
 				$aMenus['<i class="fa fa-sheqel"></i>Techie'] = [
 					'Products' => 'admincp.product',
 					'Modules' => 'admincp.module',
@@ -555,7 +569,14 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 			$is_settings = true;
 		}
 
-		$aSkipModules = ['api', 'apps', 'ban', 'user', 'core', 'custom', 'admincp', 'page', 'language', 'attachment', 'theme'];
+		$aSkipModules = ['api', 'comment', 'feed', 'apps', 'friend', 'announcement', 'ban', 'facebook', 'user', 'core', 'custom', 'admincp', 'page', 'language', 'attachment', 'theme'];
+
+		$searchSettings = Admincp_Service_Setting_Setting::instance()->getForSearch($aSkipModules);
+		$this->template()->setHeader('<script>var admincpSettings = ' . json_encode($searchSettings) . ';</script>');
+
+		if ($is_settings && in_array($app, $aSkipModules) && $app != 'user' && $app != 'feed') {
+			$this->url()->send('admincp');
+		}
 
 		if ($app && Phpfox::isModule($app) && !in_array($app, $aSkipModules)) {
 			$app = Phpfox_Module::instance()->get($app);
@@ -619,7 +640,7 @@ class Admincp_Component_Controller_Index extends Phpfox_Component
 			)->setTitle(Phpfox::getPhrase('admincp.admin_cp'));
 
 
-		if (in_array($app, ['plugin', 'module', 'product', 'component'])) {
+		if (in_array($app, ['plugin', 'module', 'component'])) {
 			$this->template()->setSectionTitle('Techie: ' . ucwords($app));
 			$this->template()->setActionMenu([
 				'New ' . ucwords($app) => [

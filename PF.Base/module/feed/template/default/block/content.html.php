@@ -12,7 +12,7 @@ defined('PHPFOX') or exit('NO DICE!');
 
 ?>	
 {if !Profile_Service_Profile::instance()->timeline()}
-	<div class="activity_feed_content">							
+	<div class="activity_feed_content">
 {/if}
 	<div class="activity_feed_content_text{if isset($aFeed.comment_type_id) && $aFeed.comment_type_id == 'poll'} js_parent_module_feed_{$aFeed.comment_type_id}{/if}">
 		{if !isset($aFeed.feed_mini) && !Profile_Service_Profile::instance()->timeline()}
@@ -98,14 +98,17 @@ defined('PHPFOX') or exit('NO DICE!');
 							<a href="{$aFeed.feed_title_extra_link}" target="_blank"{if Phpfox::getParam('core.no_follow_on_external_links')} rel="nofollow"{/if}>{$aFeed.feed_title_extra|clean}</a>
 						</div>
 					{/if}
-				{/if}			
+				{/if}
 				{if !empty($aFeed.feed_content)}
 					<div class="activity_feed_content_display">
+						{*
 						{if strpos($aFeed.feed_content, '<br />') >= 200}
 							{$aFeed.feed_content|feed_strip|shorten:200:'...'|split:55|max_line}
 						{else}
 							{$aFeed.feed_content|feed_strip|split:55|max_line|shorten:200:'...'}
 						{/if}
+						*}
+						{$aFeed.feed_content|feed_strip}
 					</div>
 				{/if}
 				{if !empty($aFeed.feed_custom_html)}
@@ -113,7 +116,11 @@ defined('PHPFOX') or exit('NO DICE!');
 						{$aFeed.feed_custom_html}
 					</div>
 				{/if}
-				
+
+				{if !empty($aFeed.app_content)}
+					{$aFeed.app_content}
+				{/if}
+
 				{if !empty($aFeed.parent_module_id)}
 					{module name='feed.mini' parent_feed_id=$aFeed.parent_feed_id parent_module_id=$aFeed.parent_module_id}
 				{/if}

@@ -9,25 +9,9 @@
 		<div id="admincp_base"></div>
 		<div id="global_ajax_message"></div>
 
-		{*
-		<div id="top_holder">
-		<div id="main_top_fixed">
-			<div id="main_top">
-				<div class="main_holder">
-					<div id="main_top_inner">
-						<a href="{url link='admincp'}" id="logo">AdminCP</a>
-						<div id="user_info_link">
-							{phrase var='admincp.logged_in_as' user=$aUserDetails} <span class="separator">|</span> <a href="{url link=''}">{phrase var='admincp.view_site'}</a>					
-						</div>
-					</div>
-				</div>
-			</div>
-		*}
-
 		<div id="header">
 			<a href="#" class="header_logo">AdminCP</a>
 		</div>
-
 
 		<div id="top">
 			<div class="nano">
@@ -51,6 +35,13 @@
 						{if count($sLink)}
 						<li class="main_menu_link_li"><a class="main_menu_link" href="#">{$sPhrase}</a>
 							<div class="main_sub_menu">
+								{if strpos($sPhrase, 'fa-cog')}
+								<div class="admincp_search_settings">
+									<span class="remove"><i class="fa fa-remove"></i></span>
+									<input type="text" name="setting" placeholder="Search settings..." autocomplete="off">
+									<div class="admincp_search_settings_results"></div>
+								</div>
+								{/if}
 								<ul>
 								{foreach from=$sLink key=sPhrase2 item=sLink2}
 									{if is_array($sLink2)}
@@ -118,7 +109,7 @@
 							</ul>
 
 							<div class="apps_version">
-								©{$ActiveApp.vendor}<span>v{$ActiveApp.version}</span>
+								v{$ActiveApp.version}
 							</div>
 						</div>
 						<div class="apps_content">

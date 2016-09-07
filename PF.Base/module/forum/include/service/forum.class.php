@@ -202,7 +202,7 @@ class Forum_Service_Forum extends Phpfox_Service
 			->execute('getRow');
 	}
 	
-	public function getSearchFilter($bIsSearchQuery = false)		
+	public function getSearchFilter($bIsSearchQuery = false, $forumId = 0)
 	{
 		$aPages = array(20, 25, 30, 35, 40, 45, 50);
 		$aDisplays = array();
@@ -275,8 +275,27 @@ class Forum_Service_Forum extends Phpfox_Service
 		
 		$aSettings = array(
 			'type' => 'forum',
-			'filters' => $aFilters,
-			'cache' => true,
+			// 'filters' => $aFilters,
+			// 'field' => 'ft.thread_id',
+			'search_tool' => array(
+				'table_alias' => 'ft',
+				'search' => array(
+					'action' => Phpfox_Url::instance()->makeUrl('forum.search'),
+					'hidden' => '<input type="hidden" name="forum_id" value="' . $forumId . '">',
+					'default_value' => 'Search this forum...',
+					'name' => 'search',
+					'field' => array('ft.title')
+				),
+				'sort' => array(
+					'latest' => array('ft.time_update', Phpfox::getPhrase('blog.latest')),
+					// 'most-viewed' => array('blog.total_view', Phpfox::getPhrase('blog.most_viewed')),
+					// 'most-liked' => array('blog.total_like', Phpfox::getPhrase('blog.most_liked')),
+					// 'most-talked' => array('blog.total_comment', Phpfox::getPhrase('blog.most_discussed'))
+				),
+				'show' => array(20)
+			),
+
+			// 'cache' => true,
 			'field' => array(
 				'depend' => 'result',
 				'fields' => array('fp.post_id', 'ft.thread_id')
@@ -323,6 +342,10 @@ class Forum_Service_Forum extends Phpfox_Service
 	public function getAccess()
 	{
 		$aPerms = array(
+			'can_start_thread' => [
+				'phrase' => 'Can start a new discussion?',
+				'value' => true
+			],
 			'can_view_forum' => array(
 				'phrase' => Phpfox::getPhrase('forum.can_view_forum'),
 				'value' => true
@@ -470,7 +493,7 @@ class Forum_Service_Forum extends Phpfox_Service
 			return $bForceReturn;
 		}
 		
-		return $aForumPerms[$iForumId][Phpfox::getUserBy('user_group_id')][$sVar];
+		return (isset($aForumPerms[$iForumId][Phpfox::getUserBy('user_group_id')][$sVar]) ? $aForumPerms[$iForumId][Phpfox::getUserBy('user_group_id')][$sVar] : true);
 	}
 	
 	public function buildMenu()
@@ -738,6 +761,12 @@ class Forum_Service_Forum extends Phpfox_Service
 		{
 			$this->_aForums = array();
 		}
+
+		foreach ($this->_aForums as $key => $value) {
+			$this->_aForums[$key]['toggle_class'] = (Phpfox::getCookie('forum_toggle_' . $value['forum_id']) ? ' is_toggled' : '');
+		}
+
+		// d($this->_aForums); exit;
 		
 		$bIsSet = true;
 	
@@ -790,8 +819,9 @@ class Forum_Service_Forum extends Phpfox_Service
 	{
 		$aForums = $this->database()->select('forum_id')
 			->from(Phpfox::getT('forum_access'))
-			->where('var_value = 0 AND user_group_id = ' . Phpfox::getUserBy('user_group_id'))
+			->where('var_value = 0 AND var_name = \'can_view_forum\' AND user_group_id = ' . Phpfox::getUserBy('user_group_id'))
 			->execute('getSlaveRows');
+
 		if (empty($aForums))
 		{
 			return array();

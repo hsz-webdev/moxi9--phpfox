@@ -13,8 +13,18 @@ class HTML extends \Core\Model {
 
 	public function set($content) {
 
+		$dir = $this->_theme->getPath() . 'html/';
+		if (!is_dir($dir)) {
+			mkdir($dir);
+		}
+
 		$path = $this->_theme->getPath() . 'html/layout.html';
 		file_put_contents($path, $content);
+
+		$twig = PHPFOX_DIR_FILE . 'cache/twig/';
+		if (is_dir($twig)) {
+			\Phpfox_File::instance()->delete_directory($twig);
+		}
 
 		/*
 		if ($this->_get()) {
@@ -43,6 +53,10 @@ class HTML extends \Core\Model {
 
 	public function get() {
 		$html = $this->_theme->getPath() . 'html/layout.html';
+		if (!file_exists($html)) {
+			$html = $this->_theme->basePath() . 'html/layout.html';
+		}
+
 		$html = file_get_contents($html);
 
 		return $html;
