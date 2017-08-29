@@ -22,12 +22,12 @@ class Photo_Component_Controller_Rate extends Phpfox_Component
 	{
 		Phpfox::getUserParam('photo.can_view_photos', true);
 		
-		if (!Phpfox::getParam('photo.can_rate_on_photos'))
+		/*if (!Phpfox::getParam('photo.can_rate_on_photos'))
 		{
 			return Phpfox_Error::display(Phpfox::getPhrase('photo.photo_rating_is_disabled'));
-		}
+		}*/
 		
-		Phpfox::getUserParam('photo.can_rate_on_photos', true);
+//		Phpfox::getUserParam('photo.can_rate_on_photos', true);
 		
 		if (($iPhotoId = $this->request()->getInt('photo-id')))
 		{
@@ -61,7 +61,7 @@ class Photo_Component_Controller_Rate extends Phpfox_Component
 				->setBreadcrumb(Phpfox::getPhrase('photo.photos'), $this->url()->makeUrl('photo'))
 				// ->setBreadcrumb(Phpfox::getPhrase('photo.rate'), $this->url()->makeUrl('photo.rate'), true)			
 				->setHeader('cache', array(		
-						'rate_bar.css' => 'style_css'											
+						// 'rate_bar.css' => 'style_css'											
 					)
 			)			
 			->assign(array(

@@ -180,7 +180,7 @@ class Marketplace_Component_Controller_Add extends Phpfox_Component
 		
 		$this->template()->setTitle(($bIsEdit ? Phpfox::getPhrase('marketplace.editing_listing') . ': ' . $aListing['title'] : Phpfox::getPhrase('marketplace.create_a_marketplace_listing')))
 			->setBreadcrumb(Phpfox::getPhrase('marketplace.marketplace'), $this->url()->makeUrl('marketplace'))
-			->setBreadcrumb(($bIsEdit ? Phpfox::getPhrase('marketplace.editing_listing') . ': ' . $aListing['title'] : Phpfox::getPhrase('marketplace.create_a_listing')), $this->url()->makeUrl('marketplace.add'), true)
+			->setBreadcrumb(($bIsEdit ? Phpfox::getPhrase('marketplace.editing_listing') . ': ' . $aListing['title'] : Phpfox::getPhrase('marketplace.create_a_listing')), $this->url()->makeUrl('marketplace.add', ['id'=>$iEditId]), true)
 			->setEditor()
 			->setFullSite()			
 			->setPhrase(array(
@@ -191,7 +191,7 @@ class Marketplace_Component_Controller_Add extends Phpfox_Component
 					'add.js' => 'module_marketplace',
 					'progress.js' => 'static_script',
 					'<script type="text/javascript">$Behavior.marketplaceProgressBarSettings = function(){ if ($Core.exists(\'#js_marketplace_form_holder\')) { oProgressBar = {holder: \'#js_marketplace_form_holder\', progress_id: \'#js_progress_bar\', uploader: \'#js_progress_uploader\', add_more: true, max_upload: ' . (int) Phpfox::getUserParam('marketplace.total_photo_upload_limit') . ', total: 1, frame_id: \'js_upload_frame\', file_id: \'image[]\'}; $Core.progressBarInit(); } }</script>',
-					'pager.css' => 'style_css',
+					// 'pager.css' => 'style_css',
 					'country.js' => 'module_core'
 				)
 			)

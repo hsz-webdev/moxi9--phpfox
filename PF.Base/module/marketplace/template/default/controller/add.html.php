@@ -47,7 +47,7 @@ defined('PHPFOX') or exit('NO DICE!');
 			{required}<label for="title">{phrase var='marketplace.what_are_you_selling'}</label>
 			</div>
 			<div class="table_right">
-				<input type="text" name="val[title]" value="{value type='input' id='title'}" id="title" size="40" maxlength="100" />
+				<input class="form-control" type="text" name="val[title]" value="{value type='input' id='title'}" id="title" size="40" maxlength="100" />
 			</div>
 		</div>	
 
@@ -56,7 +56,7 @@ defined('PHPFOX') or exit('NO DICE!');
 				<label for="mini_description">{phrase var='marketplace.short_description'}:</label>
 			</div>
 			<div class="table_right">
-				<textarea cols="40" rows="5" name="val[mini_description]" style="height:40px;">{value type='textarea' id='mini_description'}</textarea>
+				<textarea class="form-control" rows="5" name="val[mini_description]" style="height:40px;">{value type='textarea' id='mini_description'}</textarea>
 			</div>
 		</div>			
 
@@ -74,14 +74,16 @@ defined('PHPFOX') or exit('NO DICE!');
 				{required}<label for="price">{phrase var='marketplace.price'}:</label>
 			</div>
 			<div class="table_right">
-				<select name="val[currency_id]">
-				{foreach from=$aCurrencies key=sCurrency item=aCurrency}
-					<option value="{$sCurrency}"{if $bIsEdit} {value type='select' id='currency_id' default=$sCurrency}{else}{if $aCurrency.is_default} selected="selected"{/if}{/if}>{phrase var=$aCurrency.name}</option>
-				{/foreach}
-				</select>
-				<div class="p_top_8">
-					<input type="text" name="val[price]" value="{value type='input' id='price'}" id="price" size="10" maxlength="100" onfocus="this.select();" />
-				</div>
+				<div class="form-inline">
+					<select class="form-control" name="val[currency_id]">
+						{foreach from=$aCurrencies key=sCurrency item=aCurrency}
+						<option value="{$sCurrency}"{if $bIsEdit} {value type='select' id='currency_id' default=$sCurrency}{else}{if $aCurrency.is_default} selected="selected"{/if}{/if}>{phrase var=$aCurrency.name}</option>
+						{/foreach}
+					</select>
+					<div class="p_top_8">
+						<input class="form-control" type="text" name="val[price]" value="{value type='input' id='price'}" id="price" size="10" maxlength="100" onfocus="this.select();" />
+					</div>
+        </div>
 			</div>
 		</div>	
 		
@@ -123,7 +125,7 @@ defined('PHPFOX') or exit('NO DICE!');
 			<div class="table_left">
 				{required}<label for="country_iso">{phrase var='marketplace.location'}:</label>
 			</div>
-			<div class="table_right">
+			<div class="table_right form-inline">
 				{select_location}
 				{module name='core.country-child'}
 				{if !$bIsEdit}
@@ -140,7 +142,7 @@ defined('PHPFOX') or exit('NO DICE!');
 					<label for="city">{phrase var='marketplace.city'}:</label>
 				</div>
 				<div class="table_right">
-					<input type="text" name="val[city]" value="{value type='input' id='city'}" id="city" size="20" maxlength="200" />
+					<input class="form-control" type="text" name="val[city]" value="{value type='input' id='city'}" id="city" size="20" maxlength="200" />
 				</div>
 			</div>
 			<div class="table">
@@ -148,7 +150,7 @@ defined('PHPFOX') or exit('NO DICE!');
 					<label for="postal_code">{phrase var='marketplace.zip_postal_code'}:</label>
 				</div>
 				<div class="table_right">
-					<input type="text" name="val[postal_code]" value="{value type='input' id='postal_code'}" id="postal_code" size="10" maxlength="20" />
+					<input class="form-control" type="text" name="val[postal_code]" value="{value type='input' id='postal_code'}" id="postal_code" size="10" maxlength="20" />
 				</div>
 			</div>
 		</div>
@@ -233,7 +235,6 @@ defined('PHPFOX') or exit('NO DICE!');
 	
 			{if Phpfox::isModule('friend')}
 			<div class="block">
-
 				<div class="title">{phrase var='marketplace.invite_friends'}</div>
 				<div class="content">
 				{if isset($aForms.listing_id)}
@@ -245,20 +246,22 @@ defined('PHPFOX') or exit('NO DICE!');
 
 				<div class="title">{phrase var='marketplace.invite_people_via_email'}</div>
 				<div class="content">
-					<textarea cols="40" rows="8" name="val[emails]"></textarea>
+					<textarea cols="40" rows="8" name="val[emails]" class="form-control"></textarea>
 					<div class="extra_info">
 						{phrase var='marketplace.separate_multiple_emails_with_a_comma'}
-						<div>
-							<input type="checkbox" name="val[invite_from]" value="1"> {phrase var='mail.send_from_my_own_address_semail' sEmail=$sMyEmail}
+						<div class="checkbox">
+							<label>
+								<input type="checkbox" name="val[invite_from]" value="1"> {phrase var='mail.send_from_my_own_address_semail' sEmail=$sMyEmail}
+							</label>
 						</div>
 					</div>
 				</div>
 
 				<div class="title">{phrase var='marketplace.add_a_personal_message'}</div>
 				<div class="content">
-					<textarea cols="40" rows="8" name="val[personal_message]"></textarea>
+					<textarea cols="40" rows="8" name="val[personal_message]" class="form-control"></textarea>
 					<div class="p_top_8">
-						<input type="submit" value="{phrase var='marketplace.send_invitations'}" class="button" />
+						<input type="submit" value="{phrase var='marketplace.send_invitations'}" class="button btn btn-danger" />
 					</div>
 				</div>
 			</div>

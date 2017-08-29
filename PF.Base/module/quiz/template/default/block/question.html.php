@@ -29,9 +29,9 @@ defined('PHPFOX') or exit('NO DICE!');
         {/if}
 			<a href="#" onclick="return $Core.quiz.removeQuestion(this);"><i class="fa fa-close"></i></a>
 		</div>
-		
-		<input type="text" class="question_title" name="val[q][{if isset($Question.question_id)}{$Question.question_id}{elseif isset($phpfox.iteration.question)}{$phpfox.iteration.question}{else}0{/if}][question]" value="{if isset($Question.question)}{$Question.question}{/if}" maxlength="200" size="30" />
-		
+
+		<input  type="text" class="form-control question_title" name="val[q][{if isset($Question.question_id)}{$Question.question_id}{elseif isset($phpfox.iteration.question)}{$phpfox.iteration.question}{else}0{/if}][question]" value="{if isset($Question.question)}{$Question.question}{/if}" maxlength="200" size="30" />
+
 		<div class="table">
 			<div class="table_left">{phrase var='quiz.answers'}:</div>
 			<div class="table_right answer_holder answers_holder" id="">
@@ -46,7 +46,7 @@ defined('PHPFOX') or exit('NO DICE!');
 							{else}
 								{* This happens when there is an error submitting (forgot to add a question title maybe) *}
 							{/if}
-							<input type="text" name="val[q][{if isset($Question.question_id)}{$Question.question_id}{elseif isset($phpfox.iteration.question)}{$phpfox.iteration.question}{else}0{/if}][answers][{if isset($aAnswer.answer_id) && $aAnswer.answer_id != ''}{$aAnswer.answer_id}{elseif isset($phpfox.iteration.iAnswer)}{$phpfox.iteration.iAnswer}{else}{$phpfox.iteration.iAnswer}{/if}][answer]" tabindex="" class="answer " value="{$aAnswer.answer}" maxlength="100" onblur="{literal}if(this.value == ''){ this.value = '{/literal}{$aAnswer.answer}{literal}';}{/literal}" onfocus="{literal}if ( (this.value.length == 'Answer X...'.length || this.value.length == 'Answer XY...'.length) && (this.value.substr(0,'Answer '.length) == 'Answer ') && (this.value.substr('Answer X'.length, 3) == '...')){this.value = '';}{/literal}" />
+							<input type="text" name="val[q][{if isset($Question.question_id)}{$Question.question_id}{elseif isset($phpfox.iteration.question)}{$phpfox.iteration.question}{else}0{/if}][answers][{if isset($aAnswer.answer_id) && $aAnswer.answer_id != ''}{$aAnswer.answer_id}{elseif isset($phpfox.iteration.iAnswer)}{$phpfox.iteration.iAnswer}{else}{$phpfox.iteration.iAnswer}{/if}][answer]" tabindex="" class="form-control answer " value="{$aAnswer.answer}" maxlength="100" onblur="{literal}if(this.value == ''){ this.value = '{/literal}{$aAnswer.answer}{literal}';}{/literal}" onfocus="{literal}if ( (this.value.length == 'Answer X...'.length || this.value.length == 'Answer XY...'.length) && (this.value.substr(0,'Answer '.length) == 'Answer ') && (this.value.substr('Answer X'.length, 3) == '...')){this.value = '';}{/literal}" />
 
 							<a href="#" class="a_addAnswer" onclick="return $Core.quiz.appendAnswer(this);">
 								<i class="fa fa-plus-square"></i>
@@ -61,11 +61,11 @@ defined('PHPFOX') or exit('NO DICE!');
 					{/foreach}
 				{else}
 					{for $i=1; $i <= Phpfox::getParam('quiz.default_answers_count'); $i++}
-						<div id="answer_[iQuestionId]_{$i}" class="p_2 answer_parent">
+						<div id="answer_[iQuestionId]_{$i}" class="p_2 answer_parent form-group">
 							<input name="val[q][{if isset($Question.question_id)}{$Question.question_id}{elseif isset($phpfox.iteration.question)}{$phpfox.iteration.question}{else}0{/if}][answers][{$i}][is_correct]" type="hidden" class="hdnCorrectAnswer" value="0">
 							<input type="hidden" class="hdnAnswerId"  value="">
 							<input type="hidden" class="hdnQuestionId"  value="">
-							<input type="text" name="" tabindex="{$i}" class="answer answer_{$i}" value="" maxlength="100" />
+							<input class="form-control answer" type="text" name="" tabindex="{$i}" class="answer answer_{$i}" value="" maxlength="100" />
 							<a href="#" class="a_addAnswer" onclick="return $Core.quiz.appendAnswer(this);">
 								<i class="fa fa-plus-square"></i>
 							</a>

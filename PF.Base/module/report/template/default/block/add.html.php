@@ -22,7 +22,7 @@ defined('PHPFOX') or exit('NO DICE!');
 				{phrase var='report.reason'}:
 			</div>
 			<div class="table_right">
-				<select name="reason" id="js_report">
+				<select class="form-control" name="reason" id="js_report">
 				<option value="">{phrase var='report.choose_one'}</option>
 				{foreach from=$aOptions item=aOption}
 					<option value="{$aOption.report_id}">{$aOption.message|convert}</option>
@@ -33,13 +33,13 @@ defined('PHPFOX') or exit('NO DICE!');
 				{phrase var='report.a_comment_optional'}:
 			</div>
 			<div class="table_right">
-				<textarea name="feedback" id="feedback" cols="19" rows="3"></textarea>
+				<textarea class="form-control" name="feedback" id="feedback" cols="19" rows="3"></textarea>
 			</div>			
 		</div>
 		<div class="table">
 			<div class="table_left"></div>
 			<div class="table_right">			
-				<input type="button" value="{phrase var='core.submit'}" class="button" onclick="if ( ($('#js_report').val() != '' || $('#feedback').val() != '' ) && confirm('{phrase var='core.are_you_sure' phpfox_squote=true}')) {left_curly} $.ajaxCall('report.insert', 'id={$iItemId}&amp;type={$sType}&amp;report=' + $('#js_report').val() + '&feedback='+$('#feedback').val()); tb_remove(); {right_curly}" />
+				<input type="button" value="{phrase var='core.submit'}" class="button" onclick="if ( ($('#js_report').val() != '' || $('#feedback').val() != '' ) && confirm('{phrase var='core.are_you_sure' phpfox_squote=true}')) {left_curly} $.ajaxCall('report.insert', 'id={$iItemId}&amp;type={$sType}&amp;report=' + $('#js_report').val() + '&feedback='+$('#feedback').val()); {right_curly}" />
 			</div>
 		</div>
 			

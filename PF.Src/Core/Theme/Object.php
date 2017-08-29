@@ -223,12 +223,23 @@ class Object extends \Core\Objectify {
 		if (!$flavorId) {
 			throw new \Exception('Cannot merge a theme without a flavor.');
 		}
-
+    $db = new \Core\Db();
+    $moduleList = $db->select('module_id')
+      ->singleData('module_id')
+      ->from(':module')
+      ->where('is_active=1')
+      ->all();
 		$css = new CSS($this);
 		try {
 			$data = $css->get();
-			$css->set($data);
+      $moduleData = $css->getModule($moduleList);
+      $css->reBuildModule($moduleList, $this->name);
+      $appData = $css->getApp();
+			$css->set($data, null, $moduleData . $appData, $this->name);
 		} catch (\Exception $e) {
+			if(PHPFOX_DEBUG){
+				exit("error:" . $e->getMessage());
+			}
 			return false;
 		}
 	}
@@ -240,11 +251,21 @@ class Object extends \Core\Objectify {
 		}
 
 		$id = $this->theme_id;
-		$path = PHPFOX_DIR_SITE . 'themes/' . $id . '/';
+    //get folder name
+    $Db = new \Core\Db();
+    $folderName = (String) $Db->select('folder')
+      ->from(':theme')
+      ->where('theme_id=' . (int) $id)
+      ->count();
+    if (empty($folderName)){
+      $folderName = $id;
+    }
+		$path = PHPFOX_DIR_SITE . 'themes/' . $folderName . '/';
 		$File = \Phpfox_File::instance();
 		$copy = [];
 		$dirs = [];
-		$files = $File->getAllFiles(PHPFOX_DIR. 'theme/default/');
+    $themeFile = (strtolower($folderName) == 'bootstrap') ? 'bootstrap' : 'default';
+    $files = $File->getAllFiles(PHPFOX_DIR. 'theme/'.$themeFile.'/');
 		foreach ($files as $file) {
 			if (!in_array($File->extension($file), [
 				'html', 'js', 'css', 'less'
@@ -259,7 +280,7 @@ class Object extends \Core\Objectify {
 		}
 
 		foreach ($copy as $file) {
-			$newFile = $path . str_replace(PHPFOX_DIR . 'theme/default/', '', $file);
+      $newFile = $path . str_replace(PHPFOX_DIR . 'theme/'.$themeFile.'/', '', $file);
 			if (in_array($File->extension($file), ['less', 'css'])) {
 				$newFile = str_replace('default.' . $File->extension($file), $flavorId . '.' . $File->extension($file), $newFile);
 			}
@@ -274,7 +295,6 @@ class Object extends \Core\Objectify {
 			}
 		}
 
-		$Db = new \Core\Db();
 		$Cache = new \Core\Cache();
 
 		$Db->update(':setting', array('value_actual' => ((int) \Phpfox::getParam('core.css_edit_id') + 1)), 'var_name = \'css_edit_id\'');
@@ -284,6 +304,34 @@ class Object extends \Core\Objectify {
 
 		return true;
 	}
+
+  public function getCssFileName($path, $type = 'module'){
+    //check is less file exist
+    if (substr($path, -4) == '.css'){
+      $lessPath = substr($path, 0, -4) . '.less';
+      if (file_exists(PHPFOX_DIR . $lessPath)){
+        $path = $lessPath;
+      }
+    }
+    $path = trim(str_replace('module', '', $path), PHPFOX_DS);
+    $themPath =  'themes/' . $this->folder . '/';
+    if ($this->folder == 'default') {
+      $themPath =  'theme/' . $this->folder . '/';
+    }
+    $filePath = $themPath . 'flavor/' . trim(substr(str_replace([PHPFOX_DS,'/','\\'], ['_','_','_'], $path), 0, -4),'_');
+    $filePath = trim($filePath, '.');
+    $filePath = $filePath . '.css';
+    if (!file_exists($filePath)){
+		try{
+			(new CSS($this))->buildFile($path, $type);
+		}catch(\Exception $e){
+			if(PHPFOX_DEBUG)
+				throw $e;
+		}
+    }
+
+    return 'PF.Site/' . $filePath;
+  }
 
 	public function __toArray() {
 
